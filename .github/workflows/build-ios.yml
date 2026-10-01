@@ -14,10 +14,15 @@ jobs:
       - name: ⬇️ Baixar código
         uses: actions/checkout@v4
 
-      - name: ⚙️ Instalar .NET 10 (compatível com Xcode do runner)
+      - name: 🔧 Usar Xcode 26.5 (compatível com .NET 9 iOS)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.5'
+
+      - name: ⚙️ Instalar .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '9.0.x'
 
       - name: 📦 Instalar workloads MAUI + iOS
         run: |
@@ -30,7 +35,7 @@ jobs:
       - name: 🏗️ Compilar IPA para iPhone
         run: |
           dotnet build BabyTrackerMobile.csproj \
-            -f net10.0-ios \
+            -f net9.0-ios \
             -c Release \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:BuildIpa=true \
@@ -41,9 +46,8 @@ jobs:
 
       - name: 🔍 Localizar IPA gerado
         run: |
-          echo "=== IPAs encontrados ==="
-          find . -name "*.ipa" 2>/dev/null || echo "Nenhum .ipa"
-          find . -name "*.app" -maxdepth 10 2>/dev/null | head -10
+          find . -name "*.ipa" 2>/dev/null || echo "Nenhum .ipa encontrado"
+          find bin -name "*.app" 2>/dev/null | head -5 || true
 
       - name: 📤 Upload IPA para download
         uses: actions/upload-artifact@v4
@@ -51,6 +55,6 @@ jobs:
           name: BabyTracker-iPhone
           path: |
             **/*.ipa
-            bin/Release/net10.0-ios/ios-arm64/publish/
+            bin/Release/net9.0-ios/ios-arm64/publish/
           if-no-files-found: warn
           retention-days: 30
