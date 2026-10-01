@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell x:Class="BabyTrackerMobile.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:BabyTrackerMobile.Views"
+       Shell.FlyoutBehavior="Disabled"
+       Title="BabyTracker">
+
+    <TabBar>
+        <ShellContent Title="Painel" Icon="chart_bar" ContentTemplate="{DataTemplate views:DashboardPage}" Route="dashboard" />
+        <ShellContent Title="Mamada" Icon="bottle" ContentTemplate="{DataTemplate views:FeedingPage}" Route="feeding" />
+        <ShellContent Title="Fralda" Icon="diaper" ContentTemplate="{DataTemplate views:DiaperPage}" Route="diaper" />
+        <ShellContent Title="Histórico" Icon="calendar" ContentTemplate="{DataTemplate views:HistoryPage}" Route="history" />
+        <ShellContent Title="Config." Icon="settings" ContentTemplate="{DataTemplate views:SettingsPage}" Route="settings" />
+    </TabBar>
+</Shell>

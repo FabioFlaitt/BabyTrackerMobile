@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:BabyTrackerMobile.ViewModels"
+             x:Class="BabyTrackerMobile.Views.FeedingPage"
+             x:DataType="vm:FeedingViewModel"
+             Title="Mamada"
+             BackgroundColor="#F5F5F5">
+    <ScrollView>
+        <StackLayout Spacing="15" Padding="15">
+            <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
+                <StackLayout Spacing="15">
+                    <Label Text="🍼 Registrar Mamada" FontSize="20" FontAttributes="Bold" TextColor="#212121" HorizontalOptions="Center" Margin="0,0,0,10" />
+                    
+                    <Label Text="Horário" TextColor="#757575" FontSize="14" />
+                    <TimePicker Time="{Binding FeedingTime}" BackgroundColor="#F5F5F5" />
+                    
+                    <Label Text="Duração (minutos)" TextColor="#757575" FontSize="14" />
+                    <Entry Text="{Binding DurationMinutes}" Keyboard="Numeric" BackgroundColor="#F5F5F5" />
+                    
+                    <Label Text="Lado/Tipo" TextColor="#757575" FontSize="14" />
+                    <Picker ItemsSource="{Binding SideOptions}" SelectedIndex="{Binding SelectedSideIndex}" BackgroundColor="#F5F5F5" />
+                    
+                    <StackLayout IsVisible="{Binding IsBottleFeeding}">
+                        <Label Text="Volume (ml)" TextColor="#757575" FontSize="14" />
+                        <Entry Text="{Binding BottleAmountMl}" Keyboard="Numeric" BackgroundColor="#F5F5F5" />
+                    </StackLayout>
+
+                    <Label Text="Observações" TextColor="#757575" FontSize="14" />
+                    <Editor Text="{Binding Notes}" HeightRequest="80" BackgroundColor="#F5F5F5" />
+
+                    <Button Text="Registrar Mamada 🍼" Command="{Binding RegisterFeedingCommand}" BackgroundColor="#1976D2" TextColor="White" CornerRadius="8" Margin="0,20,0,0" />
+                </StackLayout>
+            </Frame>
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

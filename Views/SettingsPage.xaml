@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:BabyTrackerMobile.ViewModels"
+             x:Class="BabyTrackerMobile.Views.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="Configurações"
+             BackgroundColor="#F5F5F5">
+    <ScrollView>
+        <StackLayout Spacing="15" Padding="15">
+            
+            <!-- Baby Data Card -->
+            <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
+                <StackLayout Spacing="15">
+                    <Label Text="👶 Dados do Bebê" FontSize="18" FontAttributes="Bold" TextColor="#212121" />
+                    
+                    <Label Text="Nome do Bebê" TextColor="#757575" FontSize="14" />
+                    <Entry Text="{Binding BabyName}" BackgroundColor="#F5F5F5" />
+                    
+                    <Label Text="Data de Nascimento" TextColor="#757575" FontSize="14" />
+                    <DatePicker Date="{Binding BirthDate}" BackgroundColor="#F5F5F5" />
+                    
+                    <Label Text="Peso ao Nascer (g)" TextColor="#757575" FontSize="14" />
+                    <Entry Text="{Binding BirthWeightGrams}" Keyboard="Numeric" BackgroundColor="#F5F5F5" />
+                    
+                    <Label Text="Tipo de Alimentação" TextColor="#757575" FontSize="14" />
+                    <Picker ItemsSource="{Binding FeedingTypeOptions}" SelectedIndex="{Binding SelectedFeedingTypeIndex}" BackgroundColor="#F5F5F5" />
+                    
+                    <Button Text="Salvar 💾" Command="{Binding SaveBabyCommand}" BackgroundColor="#388E3C" TextColor="White" CornerRadius="8" Margin="0,10,0,0" />
+                </StackLayout>
+            </Frame>
+
+            <!-- Medical References Card -->
+            <Frame BackgroundColor="#E3F2FD" CornerRadius="12" Padding="20" HasShadow="False">
+                <StackLayout Spacing="10">
+                    <Label Text="📚 Referências Médicas" FontSize="18" FontAttributes="Bold" TextColor="#1976D2" />
+                    
+                    <Label Text="• OMS: Amamentação exclusiva nos primeiros 6 meses" TextColor="#212121" />
+                    <Label Text="• AAP: 8-12 mamadas/dia nas primeiras semanas" TextColor="#212121" />
+                    <Label Text="• SBP: Fraldas molhadas indicam hidratação adequada" TextColor="#212121" />
+                    <Label Text="• Fezes brancas/acólicas = emergência médica" TextColor="#C62828" FontAttributes="Bold" />
+                    
+                    <Label Text="Este app não substitui orientação médica profissional." TextColor="#757575" FontSize="12" FontAttributes="Italic" Margin="0,10,0,0" />
+                </StackLayout>
+            </Frame>
+            
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

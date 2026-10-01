@@ -1,0 +1,36 @@
+# .NET / MAUI build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# macOS
+.DS_Store
+
+# iOS / Xcode
+*.ipa
+*.xcarchive
+*.dSYM
+DerivedData/
+
+# Android
+*.apk
+*.aab
+
+# SQLite local DB (dados pessoais)
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.idea/
+*.swp
