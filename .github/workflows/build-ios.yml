@@ -14,36 +14,36 @@ jobs:
       - name: ⬇️ Baixar código
         uses: actions/checkout@v4
 
-      - name: ⚙️ Instalar .NET 9
+      - name: ⚙️ Instalar .NET 10 (compatível com Xcode do runner)
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
-      - name: 📦 Instalar todos os workloads MAUI
+      - name: 📦 Instalar workloads MAUI + iOS
         run: |
           dotnet workload install maui
           dotnet workload install ios
 
-      - name: 🔄 Restaurar pacotes (somente iOS)
-        run: dotnet restore BabyTrackerMobile.csproj -p:TargetFrameworks=net9.0-ios
+      - name: 🔄 Restaurar pacotes
+        run: dotnet restore BabyTrackerMobile.csproj
 
       - name: 🏗️ Compilar IPA para iPhone
         run: |
           dotnet build BabyTrackerMobile.csproj \
-            -f net9.0-ios \
+            -f net10.0-ios \
             -c Release \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:BuildIpa=true \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
-            /p:_RequireCodeSigning=false
+            /p:_RequireCodeSigning=false \
+            /p:SkipValidateMauiImplicitPackageReferences=true
 
-      - name: 🔍 Localizar arquivos gerados
+      - name: 🔍 Localizar IPA gerado
         run: |
           echo "=== IPAs encontrados ==="
-          find . -name "*.ipa" 2>/dev/null || echo "Nenhum .ipa encontrado"
-          echo "=== App bundles ==="
-          find . -name "*.app" -maxdepth 10 2>/dev/null | head -5
+          find . -name "*.ipa" 2>/dev/null || echo "Nenhum .ipa"
+          find . -name "*.app" -maxdepth 10 2>/dev/null | head -10
 
       - name: 📤 Upload IPA para download
         uses: actions/upload-artifact@v4
@@ -51,6 +51,6 @@ jobs:
           name: BabyTracker-iPhone
           path: |
             **/*.ipa
-            bin/Release/net9.0-ios/ios-arm64/publish/
+            bin/Release/net10.0-ios/ios-arm64/publish/
           if-no-files-found: warn
           retention-days: 30
