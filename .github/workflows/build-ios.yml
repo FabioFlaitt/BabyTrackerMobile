@@ -37,7 +37,7 @@ jobs:
           dotnet publish BabyTrackerMobile.csproj \
             -f net9.0-ios \
             -c Release \
-            -r iossimulator-arm64 \
+            /p:RuntimeIdentifier=iossimulator-arm64 \
             /p:SkipValidateMauiImplicitPackageReferences=true \
             -o ./artifacts
 
