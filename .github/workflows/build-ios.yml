@@ -14,37 +14,43 @@ jobs:
       - name: ⬇️ Baixar código
         uses: actions/checkout@v4
 
-      - name: ⚙️ Instalar .NET 8
+      - name: ⚙️ Instalar .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
-      - name: 📦 Instalar MAUI iOS workload
-        run: dotnet workload install maui-ios
+      - name: 📦 Instalar todos os workloads MAUI
+        run: |
+          dotnet workload install maui
+          dotnet workload install ios
 
-      - name: 🔄 Restaurar pacotes NuGet
-        run: dotnet restore BabyTrackerMobile.csproj
+      - name: 🔄 Restaurar pacotes (somente iOS)
+        run: dotnet restore BabyTrackerMobile.csproj -p:TargetFrameworks=net9.0-ios
 
-      - name: 🏗️ Compilar para iOS (device arm64)
+      - name: 🏗️ Compilar IPA para iPhone
         run: |
           dotnet build BabyTrackerMobile.csproj \
-            -f net8.0-ios \
+            -f net9.0-ios \
             -c Release \
-            -r ios-arm64 \
+            /p:RuntimeIdentifier=ios-arm64 \
             /p:BuildIpa=true \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
             /p:_RequireCodeSigning=false
 
-      - name: 🔍 Localizar IPA gerado
-        run: find . -name "*.ipa" 2>/dev/null && find . -name "*.app" -maxdepth 8 2>/dev/null || echo "Verificando bin/..."
+      - name: 🔍 Localizar arquivos gerados
+        run: |
+          echo "=== IPAs encontrados ==="
+          find . -name "*.ipa" 2>/dev/null || echo "Nenhum .ipa encontrado"
+          echo "=== App bundles ==="
+          find . -name "*.app" -maxdepth 10 2>/dev/null | head -5
 
-      - name: 📤 Upload IPA / App bundle
+      - name: 📤 Upload IPA para download
         uses: actions/upload-artifact@v4
         with:
           name: BabyTracker-iPhone
           path: |
             **/*.ipa
-            bin/Release/net8.0-ios/ios-arm64/publish/*.app
+            bin/Release/net9.0-ios/ios-arm64/publish/
           if-no-files-found: warn
           retention-days: 30
