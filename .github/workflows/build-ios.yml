@@ -34,26 +34,23 @@ jobs:
 
       - name: 🏗️ Compilar para iOS Simulator (sem assinatura)
         run: |
-          dotnet publish BabyTrackerMobile.csproj \
+          dotnet build BabyTrackerMobile.csproj \
             -f net9.0-ios \
             -c Release \
             /p:RuntimeIdentifier=iossimulator-arm64 \
-            /p:SkipValidateMauiImplicitPackageReferences=true \
-            -o ./artifacts
+            /p:SkipValidateMauiImplicitPackageReferences=true
 
       - name: 🔍 Listar arquivos gerados
         run: |
-          echo "=== Artifacts ==="
-          ls -la ./artifacts/ 2>/dev/null || true
           echo "=== App bundles ==="
-          find . -name "*.app" -maxdepth 10 2>/dev/null | head -10
-          echo "=== IPAs ==="
-          find . -name "*.ipa" 2>/dev/null || echo "Nenhum IPA (esperado para simulator)"
+          find bin -name "*.app" 2>/dev/null | head -10
+          echo "=== Todos os arquivos de saida ==="
+          find bin/Release -type f 2>/dev/null | head -20
 
       - name: 📤 Upload build
         uses: actions/upload-artifact@v4
         with:
           name: BabyTracker-iOS-Build
-          path: ./artifacts/
+          path: bin/Release/net9.0-ios/
           if-no-files-found: warn
           retention-days: 30
