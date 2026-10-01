@@ -1,0 +1,69 @@
+name: 🍼 Build BabyTracker IPA (iPhone)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:   # Botão "Run workflow" manual no GitHub
+
+jobs:
+  build-ipa:
+    name: Build IPA para iPhone
+    runs-on: macos-latest   # GitHub fornece Mac gratuito!
+
+    steps:
+      - name: ⬇️ Baixar código
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Instalar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 📦 Instalar MAUI iOS
+        run: |
+          dotnet workload install maui-ios --skip-sign-check
+          dotnet workload install ios --skip-sign-check
+
+      - name: 🔄 Restaurar pacotes NuGet
+        run: dotnet restore BabyTrackerMobile.csproj -f net8.0-ios
+
+      - name: 🏗️ Compilar IPA (sem assinatura - para usar com Sideloadly)
+        run: |
+          dotnet publish BabyTrackerMobile.csproj \
+            -f net8.0-ios \
+            -c Release \
+            /p:RuntimeIdentifier=ios-arm64 \
+            /p:BuildIpa=true \
+            /p:CodesignKey="" \
+            /p:CodesignProvision="" \
+            /p:_RequireCodeSigning=false \
+            /p:EnableCodeSigning=false \
+            -o ./output
+
+      - name: 📦 Encontrar o IPA gerado
+        run: |
+          echo "Arquivos gerados:"
+          find . -name "*.ipa" -o -name "*.app" 2>/dev/null
+          find ./output -type f 2>/dev/null || true
+          find ./bin -name "*.ipa" 2>/dev/null || true
+
+      - name: 📤 Publicar IPA como artefato para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: BabyTracker-iPhone-IPA
+          path: |
+            **/*.ipa
+            **/BabyTrackerMobile.app
+          if-no-files-found: warn
+          retention-days: 30   # Disponível por 30 dias para download
+
+      - name: ✅ Resumo do build
+        run: |
+          echo "## 🍼 BabyTracker Build Concluído!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📲 Como instalar no iPhone:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Baixe o artefato **BabyTracker-iPhone-IPA** acima" >> $GITHUB_STEP_SUMMARY
+          echo "2. Instale o [Sideloadly](https://sideloadly.io) no seu Windows" >> $GITHUB_STEP_SUMMARY
+          echo "3. Conecte o iPhone com o cabo USB" >> $GITHUB_STEP_SUMMARY
+          echo "4. Arraste o .ipa para o Sideloadly e coloque seu Apple ID" >> $GITHUB_STEP_SUMMARY
+          echo "5. No iPhone: **Ajustes → Geral → VPN e Gerenciamento de Dispositivo** → confie no app" >> $GITHUB_STEP_SUMMARY
