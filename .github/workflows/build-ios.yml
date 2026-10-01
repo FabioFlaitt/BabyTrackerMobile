@@ -1,4 +1,4 @@
-name: 🍼 Build BabyTracker IPA (iPhone)
+name: 🍼 Build BabyTracker iOS
 
 on:
   push:
@@ -6,15 +6,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ipa:
-    name: Build IPA para iPhone
+  build-ios:
+    name: Build iOS
     runs-on: macos-latest
 
     steps:
       - name: ⬇️ Baixar código
         uses: actions/checkout@v4
 
-      - name: 🔧 Usar Xcode 26.5 (compatível com .NET 9 iOS)
+      - name: 🔧 Usar Xcode 26.5
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '26.5'
@@ -24,7 +24,7 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: 📦 Instalar workloads MAUI + iOS
+      - name: 📦 Instalar workloads
         run: |
           dotnet workload install maui
           dotnet workload install ios
@@ -32,29 +32,28 @@ jobs:
       - name: 🔄 Restaurar pacotes
         run: dotnet restore BabyTrackerMobile.csproj
 
-      - name: 🏗️ Compilar IPA para iPhone
+      - name: 🏗️ Compilar para iOS Simulator (sem assinatura)
         run: |
-          dotnet build BabyTrackerMobile.csproj \
+          dotnet publish BabyTrackerMobile.csproj \
             -f net9.0-ios \
             -c Release \
-            /p:RuntimeIdentifier=ios-arm64 \
-            /p:BuildIpa=true \
-            /p:CodesignKey="" \
-            /p:CodesignProvision="" \
-            /p:_RequireCodeSigning=false \
-            /p:SkipValidateMauiImplicitPackageReferences=true
+            -r iossimulator-arm64 \
+            /p:SkipValidateMauiImplicitPackageReferences=true \
+            -o ./artifacts
 
-      - name: 🔍 Localizar IPA gerado
+      - name: 🔍 Listar arquivos gerados
         run: |
-          find . -name "*.ipa" 2>/dev/null || echo "Nenhum .ipa encontrado"
-          find bin -name "*.app" 2>/dev/null | head -5 || true
+          echo "=== Artifacts ==="
+          ls -la ./artifacts/ 2>/dev/null || true
+          echo "=== App bundles ==="
+          find . -name "*.app" -maxdepth 10 2>/dev/null | head -10
+          echo "=== IPAs ==="
+          find . -name "*.ipa" 2>/dev/null || echo "Nenhum IPA (esperado para simulator)"
 
-      - name: 📤 Upload IPA para download
+      - name: 📤 Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: BabyTracker-iPhone
-          path: |
-            **/*.ipa
-            bin/Release/net9.0-ios/ios-arm64/publish/
+          name: BabyTracker-iOS-Build
+          path: ./artifacts/
           if-no-files-found: warn
           retention-days: 30
