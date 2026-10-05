@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-ios:
-    name: Build iOS
+    name: Build iOS (iPhone real)
     runs-on: macos-latest
 
     steps:
@@ -25,32 +25,36 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: 📦 Instalar workloads
-        run: |
-          dotnet workload install maui
-          dotnet workload install ios
+        run: dotnet workload install maui ios
 
       - name: 🔄 Restaurar pacotes
-        run: dotnet restore BabyTrackerMobile.csproj
+        run: dotnet restore BabyTrackerMobile.csproj -r ios-arm64
 
-      - name: 🏗️ Compilar para iOS Simulator (sem assinatura)
+      # IMPORTANTE: ios-arm64 = iPhone de verdade.
+      # (iossimulator-arm64 gera um app que SÓ roda no simulador e fecha na hora no iPhone)
+      - name: 🏗️ Compilar para iPhone (sem assinatura - assinar depois com Sideloadly/AltStore)
         run: |
           dotnet build BabyTrackerMobile.csproj \
             -f net9.0-ios \
             -c Release \
-            /p:RuntimeIdentifier=iossimulator-arm64 \
-            /p:SkipValidateMauiImplicitPackageReferences=true
+            -r ios-arm64 \
+            -p:EnableCodeSigning=false \
+            -p:SkipValidateMauiImplicitPackageReferences=true
 
-      - name: 🔍 Listar arquivos gerados
+      - name: 📦 Gerar .ipa
         run: |
-          echo "=== App bundles ==="
-          find bin -name "*.app" 2>/dev/null | head -10
-          echo "=== Todos os arquivos de saida ==="
-          find bin/Release -type f 2>/dev/null | head -20
+          APP=$(find bin/Release/net9.0-ios/ios-arm64 -maxdepth 1 -name "*.app" | head -1)
+          echo "App: $APP"
+          /usr/libexec/PlistBuddy -c "Print :DTPlatformName" "$APP/Info.plist"
+          mkdir -p ipa/Payload
+          cp -R "$APP" ipa/Payload/
+          cd ipa && zip -qry ../BabyTracker.ipa Payload && cd ..
+          ls -lh BabyTracker.ipa
 
-      - name: 📤 Upload build
+      - name: 📤 Upload .ipa
         uses: actions/upload-artifact@v4
         with:
-          name: BabyTracker-iOS-Build
-          path: bin/Release/net9.0-ios/
-          if-no-files-found: warn
+          name: BabyTracker-ipa
+          path: BabyTracker.ipa
+          if-no-files-found: error
           retention-days: 30
