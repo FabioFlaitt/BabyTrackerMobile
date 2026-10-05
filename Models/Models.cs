@@ -59,6 +59,16 @@ namespace BabyTrackerMobile.Models
         public double WeightGrams { get; set; }
     }
 
+    [Table("MotherWaters")]
+    public class MotherWaterRecord
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int BabyId { get; set; }
+        public DateTime Time { get; set; } = DateTime.Now;
+        public int VolumeMl { get; set; }
+    }
+
     public class GuidelineRange
     {
         public int Minimum { get; set; }

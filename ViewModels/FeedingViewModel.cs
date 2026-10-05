@@ -55,7 +55,8 @@ namespace BabyTrackerMobile.ViewModels
             IsLoading = true;
             try
             {
-                CurrentBaby = await DatabaseService.GetFirstBabyAsync();
+                // Garante que exista um bebê, mesmo sem passar pela tela Config.
+                CurrentBaby = await DatabaseService.GetOrCreateBabyAsync();
             }
             finally { IsLoading = false; }
         }
@@ -63,28 +64,36 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task RegisterFeedingAsync()
         {
-            if (CurrentBaby == null) return;
-
-            var record = new FeedingRecord
+            try
             {
-                BabyId = CurrentBaby.Id,
-                StartTime = FeedingTime,
-                DurationMinutes = DurationMinutes,
-                Side = SelectedSide,
-                BottleAmountMl = IsBottleFeeding ? BottleAmountMl : null,
-                Notes = Notes
-            };
+                // Carrega/garante bebê se ainda não foi feito
+                CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
 
-            await DatabaseService.AddFeedingAsync(record);
+                var record = new FeedingRecord
+                {
+                    BabyId = CurrentBaby.Id,
+                    StartTime = FeedingTime,
+                    DurationMinutes = DurationMinutes,
+                    Side = SelectedSide,
+                    BottleAmountMl = IsBottleFeeding ? BottleAmountMl : null,
+                    Notes = Notes
+                };
 
-            // Reset form
-            FeedingTime = DateTime.Now;
-            DurationMinutes = 15;
-            SelectedSideIndex = 0;
-            BottleAmountMl = 30;
-            Notes = "";
+                await DatabaseService.AddFeedingAsync(record);
 
-            await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "🍼 Mamada registrada com sucesso!", "OK");
+                // Reset form
+                FeedingTime = DateTime.Now;
+                DurationMinutes = 15;
+                SelectedSideIndex = 0;
+                BottleAmountMl = 30;
+                Notes = "";
+
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "🍼 Mamada registrada com sucesso!", "OK");
+            }
+            catch (Exception ex)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", $"Não foi possível registrar: {ex.Message}", "OK");
+            }
         }
     }
 }

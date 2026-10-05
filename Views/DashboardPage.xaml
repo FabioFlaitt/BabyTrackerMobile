@@ -10,13 +10,12 @@
     <RefreshView Command="{Binding RefreshCommand}" IsRefreshing="{Binding IsLoading}">
         <ScrollView>
             <StackLayout Spacing="15" Padding="15">
-                
+
                 <!-- Header Card -->
                 <Frame BackgroundColor="#1976D2" CornerRadius="12" Padding="20" HasShadow="False">
                     <StackLayout>
                         <Label Text="{Binding BabyDisplayName}" FontSize="24" TextColor="White" FontAttributes="Bold" HorizontalOptions="Center" />
                         <Label Text="{Binding DayOfLifeText}" FontSize="14" TextColor="White" HorizontalOptions="Center" />
-                        <Label Text="Configure seu bebê na aba Config. ➡️" FontSize="14" TextColor="#F57F17" HorizontalOptions="Center" IsVisible="False" Margin="0,10,0,0" />
                     </StackLayout>
                 </Frame>
 
@@ -49,7 +48,6 @@
                             <Label Text="🍼" FontSize="24" HorizontalOptions="Center" />
                             <Label Text="{Binding TodayAnalysis.FeedingCount}" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#212121" />
                             <Label Text="Mamadas" FontSize="12" HorizontalOptions="Center" TextColor="#757575" />
-                            <Label Text="" FontSize="16" HorizontalOptions="Center" />
                         </StackLayout>
                     </Frame>
                     <Frame Grid.Column="1" BackgroundColor="White" CornerRadius="12" Padding="10" HasShadow="False">
@@ -57,7 +55,6 @@
                             <Label Text="💧" FontSize="24" HorizontalOptions="Center" />
                             <Label Text="{Binding TodayAnalysis.WetDiaperCount}" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#212121" />
                             <Label Text="Xixi" FontSize="12" HorizontalOptions="Center" TextColor="#757575" />
-                            <Label Text="" FontSize="16" HorizontalOptions="Center" />
                         </StackLayout>
                     </Frame>
                     <Frame Grid.Column="2" BackgroundColor="White" CornerRadius="12" Padding="10" HasShadow="False">
@@ -65,10 +62,41 @@
                             <Label Text="💩" FontSize="24" HorizontalOptions="Center" />
                             <Label Text="{Binding TodayAnalysis.DirtyDiaperCount}" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#212121" />
                             <Label Text="Cocô" FontSize="12" HorizontalOptions="Center" TextColor="#757575" />
-                            <Label Text="" FontSize="16" HorizontalOptions="Center" />
                         </StackLayout>
                     </Frame>
                 </Grid>
+
+                <!-- Água da Mamãe -->
+                <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False">
+                    <StackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="💧 Água da Mamãe" FontSize="16" FontAttributes="Bold" TextColor="#212121" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="{Binding MotherWaterText}" FontSize="14" TextColor="#1976D2" FontAttributes="Bold" VerticalOptions="Center" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Grid.Column="0" Text="+300 ml 🥛" Command="{Binding QuickWater300Command}" BackgroundColor="#039BE5" TextColor="White" CornerRadius="8" />
+                            <Button Grid.Column="1" Text="+500 ml 🥤" Command="{Binding QuickWater500Command}" BackgroundColor="#0277BD" TextColor="White" CornerRadius="8" />
+                        </Grid>
+                        <StackLayout BindableLayout.ItemsSource="{Binding TodayMotherWaters}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:MotherWaterRecord">
+                                    <SwipeView>
+                                        <SwipeView.RightItems>
+                                            <SwipeItems>
+                                                <SwipeItem Text="Deletar" BackgroundColor="#C62828" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=DeleteMotherWaterCommand}" CommandParameter="{Binding .}" />
+                                            </SwipeItems>
+                                        </SwipeView.RightItems>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" Padding="5,3">
+                                            <Label Grid.Column="0" Text="{Binding Time, StringFormat='{0:HH:mm}'}" FontAttributes="Bold" TextColor="#1976D2" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Text="" />
+                                            <Label Grid.Column="2" Text="{Binding VolumeMl, StringFormat='{0} ml'}" TextColor="#212121" VerticalOptions="Center" />
+                                        </Grid>
+                                    </SwipeView>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </StackLayout>
+                    </StackLayout>
+                </Frame>
 
                 <!-- Alerts Section -->
                 <StackLayout IsVisible="True">
@@ -78,7 +106,7 @@
                             <DataTemplate x:DataType="models:AlertInfo">
                                 <Frame CornerRadius="8" Padding="10" Margin="0,0,0,5" BorderColor="#FF9800" BackgroundColor="White" HasShadow="False">
                                     <Grid ColumnDefinitions="Auto,*">
-                                        <Label Grid.Column="0" Text="??" FontSize="20" VerticalOptions="Center" Margin="0,0,10,0" />
+                                        <Label Grid.Column="0" Text="{Binding Icon}" FontSize="20" VerticalOptions="Center" Margin="0,0,10,0" />
                                         <StackLayout Grid.Column="1">
                                             <Label Text="{Binding Title}" FontAttributes="Bold" TextColor="#212121" FontSize="14" />
                                             <Label Text="{Binding Message}" TextColor="#757575" FontSize="12" />
@@ -105,8 +133,8 @@
                                 <Frame CornerRadius="8" Padding="15" Margin="0,0,0,10" BackgroundColor="White" HasShadow="False">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <Label Grid.Column="0" Text="{Binding StartTime, StringFormat='{0:HH:mm}'}" FontAttributes="Bold" TextColor="#1976D2" VerticalOptions="Center" />
-                                        <Label Grid.Column="1" Text="" Margin="15,0,0,0" TextColor="#212121" VerticalOptions="Center" />
-                                        <Label Grid.Column="2" Text="" TextColor="#757575" VerticalOptions="Center" />
+                                        <Label Grid.Column="1" Text="{Binding DurationMinutes, StringFormat='{0} min'}" Margin="15,0,0,0" TextColor="#212121" VerticalOptions="Center" />
+                                        <Label Grid.Column="2" Text="{Binding Side}" TextColor="#757575" VerticalOptions="Center" />
                                     </Grid>
                                 </Frame>
                             </SwipeView>

@@ -11,15 +11,15 @@
             <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
                 <StackLayout Spacing="15">
                     <Label Text="🧷 Registrar Fralda" FontSize="20" FontAttributes="Bold" TextColor="#212121" HorizontalOptions="Center" Margin="0,0,0,10" />
-                    
+
                     <Label Text="Horário" TextColor="#757575" FontSize="14" />
-                    <TimePicker Time="{Binding DiaperTime}" BackgroundColor="#F5F5F5" />
-                    
+                    <TimePicker Time="{Binding DiaperTime}" BackgroundColor="#F5F5F5" TextColor="#212121" />
+
                     <Grid ColumnDefinitions="*,Auto" Margin="0,10,0,10">
                         <Label Grid.Column="0" Text="Xixi (Fralda Molhada)" TextColor="#212121" VerticalOptions="Center" />
                         <Switch Grid.Column="1" IsToggled="{Binding IsWet}" />
                     </Grid>
-                    
+
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
                         <Label Grid.Column="0" Text="Cocô (Fralda Suja)" TextColor="#212121" VerticalOptions="Center" />
                         <Switch Grid.Column="1" IsToggled="{Binding IsDirty}" />
@@ -27,14 +27,14 @@
 
                     <StackLayout IsVisible="{Binding IsDirty}" Spacing="15">
                         <Label Text="Cor das fezes" TextColor="#757575" FontSize="14" />
-                        <Picker ItemsSource="{Binding ColorOptions}" SelectedIndex="{Binding SelectedColorIndex}" BackgroundColor="#F5F5F5" />
-                        
+                        <Picker ItemsSource="{Binding ColorOptions}" SelectedIndex="{Binding SelectedColorIndex}" BackgroundColor="#F5F5F5" TextColor="#212121" TitleColor="#757575" />
+
                         <Label Text="Consistência" TextColor="#757575" FontSize="14" />
-                        <Picker ItemsSource="{Binding ConsistencyOptions}" SelectedIndex="{Binding SelectedConsistencyIndex}" BackgroundColor="#F5F5F5" />
+                        <Picker ItemsSource="{Binding ConsistencyOptions}" SelectedIndex="{Binding SelectedConsistencyIndex}" BackgroundColor="#F5F5F5" TextColor="#212121" TitleColor="#757575" />
                     </StackLayout>
 
                     <Label Text="Observações" TextColor="#757575" FontSize="14" />
-                    <Editor Text="{Binding Notes}" HeightRequest="80" BackgroundColor="#F5F5F5" />
+                    <Editor Text="{Binding Notes}" HeightRequest="80" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" />
 
                     <Button Text="Registrar Fralda 🧷" Command="{Binding RegisterDiaperCommand}" BackgroundColor="#1976D2" TextColor="White" CornerRadius="8" Margin="0,20,0,0" />
                 </StackLayout>

@@ -22,6 +22,7 @@ namespace BabyTrackerMobile.Data
                 await _database.CreateTableAsync<FeedingRecord>();
                 await _database.CreateTableAsync<DiaperRecord>();
                 await _database.CreateTableAsync<WeightRecord>();
+                await _database.CreateTableAsync<MotherWaterRecord>();
             }
             return _database;
         }
@@ -30,6 +31,28 @@ namespace BabyTrackerMobile.Data
         {
             var db = await GetDatabaseAsync();
             return await db.Table<Baby>().FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Garante que exista um bebê cadastrado. Se não houver, cria um padrão
+        /// (Antonio, nascido hoje). Isso evita que os botões "fiquem sem fazer nada"
+        /// antes do primeiro cadastro em Config.
+        /// </summary>
+        public static async Task<Baby> GetOrCreateBabyAsync()
+        {
+            var baby = await GetFirstBabyAsync();
+            if (baby != null) return baby;
+
+            baby = new Baby
+            {
+                Name = "Antonio",
+                BirthDate = DateTime.Today,
+                BirthWeightGrams = 3000,
+                FeedingType = FeedingType.Breast
+            };
+            var db = await GetDatabaseAsync();
+            await db.InsertAsync(baby);
+            return baby;
         }
 
         public static async Task SaveBabyAsync(Baby baby)
@@ -100,6 +123,29 @@ namespace BabyTrackerMobile.Data
                 .Where(w => w.BabyId == babyId)
                 .OrderByDescending(w => w.Date)
                 .ToListAsync();
+        }
+
+        public static async Task AddMotherWaterAsync(MotherWaterRecord record)
+        {
+            var db = await GetDatabaseAsync();
+            await db.InsertAsync(record);
+        }
+
+        public static async Task<List<MotherWaterRecord>> GetMotherWatersForDateAsync(int babyId, DateTime date)
+        {
+            var db = await GetDatabaseAsync();
+            var start = date.Date;
+            var end = date.Date.AddDays(1);
+            return await db.Table<MotherWaterRecord>()
+                .Where(w => w.BabyId == babyId && w.Time >= start && w.Time < end)
+                .OrderByDescending(w => w.Time)
+                .ToListAsync();
+        }
+
+        public static async Task DeleteMotherWaterAsync(int id)
+        {
+            var db = await GetDatabaseAsync();
+            await db.DeleteAsync<MotherWaterRecord>(id);
         }
     }
 }

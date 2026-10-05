@@ -24,6 +24,12 @@ namespace BabyTrackerMobile.ViewModels
         private ObservableCollection<DiaperRecord> todayDiapers = new();
 
         [ObservableProperty]
+        private ObservableCollection<MotherWaterRecord> todayMotherWaters = new();
+
+        [ObservableProperty]
+        private int totalMotherWaterMl;
+
+        [ObservableProperty]
         private bool isLoading;
 
         public string DayOfLifeText => CurrentBaby != null
@@ -32,13 +38,20 @@ namespace BabyTrackerMobile.ViewModels
 
         public string BabyDisplayName => CurrentBaby?.Name ?? "Nenhum bebê cadastrado";
 
+        public string MotherWaterText => $"{TotalMotherWaterMl} ml hoje";
+
+        partial void OnTotalMotherWaterMlChanged(int value)
+        {
+            OnPropertyChanged(nameof(MotherWaterText));
+        }
+
         [RelayCommand]
         public async Task LoadAsync()
         {
             IsLoading = true;
             try
             {
-                CurrentBaby = await DatabaseService.GetFirstBabyAsync();
+                CurrentBaby = await DatabaseService.GetOrCreateBabyAsync();
                 OnPropertyChanged(nameof(DayOfLifeText));
                 OnPropertyChanged(nameof(BabyDisplayName));
                 await RefreshAsync();
@@ -53,8 +66,13 @@ namespace BabyTrackerMobile.ViewModels
             var date = DateTime.Today;
             var feedings = await DatabaseService.GetFeedingsForDateAsync(CurrentBaby.Id, date);
             var diapers = await DatabaseService.GetDiapersForDateAsync(CurrentBaby.Id, date);
+            var waters = await DatabaseService.GetMotherWatersForDateAsync(CurrentBaby.Id, date);
             TodayFeedings = new ObservableCollection<FeedingRecord>(feedings);
             TodayDiapers = new ObservableCollection<DiaperRecord>(diapers);
+            TodayMotherWaters = new ObservableCollection<MotherWaterRecord>(waters);
+            var total = 0;
+            foreach (var w in waters) total += w.VolumeMl;
+            TotalMotherWaterMl = total;
             TodayAnalysis = MedicalGuidelinesService.AnalyzeDay(CurrentBaby, date, feedings, diapers);
             OnPropertyChanged(nameof(DayOfLifeText));
         }
@@ -62,7 +80,7 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task QuickFeedingAsync()
         {
-            if (CurrentBaby == null) return;
+            CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
             var record = new FeedingRecord { BabyId = CurrentBaby.Id, StartTime = DateTime.Now, DurationMinutes = 15, Side = BreastSide.Left };
             await DatabaseService.AddFeedingAsync(record);
             await RefreshAsync();
@@ -72,7 +90,7 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task QuickWetDiaperAsync()
         {
-            if (CurrentBaby == null) return;
+            CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
             var record = new DiaperRecord { BabyId = CurrentBaby.Id, Time = DateTime.Now, IsWet = true };
             await DatabaseService.AddDiaperAsync(record);
             await RefreshAsync();
@@ -82,11 +100,30 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task QuickDirtyDiaperAsync()
         {
-            if (CurrentBaby == null) return;
+            CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
             var record = new DiaperRecord { BabyId = CurrentBaby.Id, Time = DateTime.Now, IsDirty = true, Color = StoolColor.Yellow, Consistency = StoolConsistency.Soft };
             await DatabaseService.AddDiaperAsync(record);
             await RefreshAsync();
             await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "Fralda suja registrada!", "OK");
+        }
+
+        [RelayCommand]
+        public async Task QuickWater300Async() => await AddMotherWaterAsync(300);
+
+        [RelayCommand]
+        public async Task QuickWater500Async() => await AddMotherWaterAsync(500);
+
+        private async Task AddMotherWaterAsync(int volumeMl)
+        {
+            CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+            var record = new MotherWaterRecord
+            {
+                BabyId = CurrentBaby.Id,
+                Time = DateTime.Now,
+                VolumeMl = volumeMl
+            };
+            await DatabaseService.AddMotherWaterAsync(record);
+            await RefreshAsync();
         }
 
         [RelayCommand]
@@ -100,6 +137,13 @@ namespace BabyTrackerMobile.ViewModels
         public async Task DeleteDiaperAsync(DiaperRecord record)
         {
             await DatabaseService.DeleteDiaperAsync(record.Id);
+            await RefreshAsync();
+        }
+
+        [RelayCommand]
+        public async Task DeleteMotherWaterAsync(MotherWaterRecord record)
+        {
+            await DatabaseService.DeleteMotherWaterAsync(record.Id);
             await RefreshAsync();
         }
     }

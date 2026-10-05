@@ -34,14 +34,14 @@ namespace BabyTrackerMobile.ViewModels
         [ObservableProperty]
         private bool isLoading;
 
-        public List<string> ColorOptions { get; } = new List<string> 
-        { 
-            "Mecônio (escuro)", "Verde escuro", "Amarelo", "Marrom", "Branco ⚠️", "Vermelho ⚠️" 
+        public List<string> ColorOptions { get; } = new List<string>
+        {
+            "Mecônio (escuro)", "Verde escuro", "Amarelo", "Marrom", "Branco ⚠️", "Vermelho ⚠️"
         };
 
-        public List<string> ConsistencyOptions { get; } = new List<string> 
-        { 
-            "Líquido", "Grumoso", "Pastoso", "Duro" 
+        public List<string> ConsistencyOptions { get; } = new List<string>
+        {
+            "Líquido", "Grumoso", "Pastoso", "Duro"
         };
 
         private int selectedColorIndex = 2; // Yellow
@@ -76,7 +76,7 @@ namespace BabyTrackerMobile.ViewModels
             IsLoading = true;
             try
             {
-                CurrentBaby = await DatabaseService.GetFirstBabyAsync();
+                CurrentBaby = await DatabaseService.GetOrCreateBabyAsync();
             }
             finally { IsLoading = false; }
         }
@@ -84,36 +84,43 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task RegisterDiaperAsync()
         {
-            if (CurrentBaby == null) return;
-
-            if (!IsWet && !IsDirty)
+            try
             {
-                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Aviso", "A fralda deve estar molhada, suja ou ambos.", "OK");
-                return;
+                CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+
+                if (!IsWet && !IsDirty)
+                {
+                    await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Aviso", "A fralda deve estar molhada, suja ou ambos.", "OK");
+                    return;
+                }
+
+                var record = new DiaperRecord
+                {
+                    BabyId = CurrentBaby.Id,
+                    Time = DiaperTime,
+                    IsWet = IsWet,
+                    IsDirty = IsDirty,
+                    Color = IsDirty ? SelectedColor : null,
+                    Consistency = IsDirty ? SelectedConsistency : null,
+                    Notes = Notes
+                };
+
+                await DatabaseService.AddDiaperAsync(record);
+
+                // Reset form
+                DiaperTime = DateTime.Now;
+                IsWet = true;
+                IsDirty = false;
+                SelectedColorIndex = 2;
+                SelectedConsistencyIndex = 2;
+                Notes = "";
+
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "🧷 Fralda registrada com sucesso!", "OK");
             }
-
-            var record = new DiaperRecord
+            catch (Exception ex)
             {
-                BabyId = CurrentBaby.Id,
-                Time = DiaperTime,
-                IsWet = IsWet,
-                IsDirty = IsDirty,
-                Color = IsDirty ? SelectedColor : null,
-                Consistency = IsDirty ? SelectedConsistency : null,
-                Notes = Notes
-            };
-
-            await DatabaseService.AddDiaperAsync(record);
-
-            // Reset form
-            DiaperTime = DateTime.Now;
-            IsWet = true;
-            IsDirty = false;
-            SelectedColorIndex = 2;
-            SelectedConsistencyIndex = 2;
-            Notes = "";
-
-            await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "🧷 Fralda registrada com sucesso!", "OK");
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", $"Não foi possível registrar: {ex.Message}", "OK");
+            }
         }
     }
 }

@@ -11,23 +11,23 @@
             <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
                 <StackLayout Spacing="15">
                     <Label Text="🍼 Registrar Mamada" FontSize="20" FontAttributes="Bold" TextColor="#212121" HorizontalOptions="Center" Margin="0,0,0,10" />
-                    
+
                     <Label Text="Horário" TextColor="#757575" FontSize="14" />
-                    <TimePicker Time="{Binding FeedingTime}" BackgroundColor="#F5F5F5" />
-                    
+                    <TimePicker Time="{Binding FeedingTime}" BackgroundColor="#F5F5F5" TextColor="#212121" />
+
                     <Label Text="Duração (minutos)" TextColor="#757575" FontSize="14" />
-                    <Entry Text="{Binding DurationMinutes}" Keyboard="Numeric" BackgroundColor="#F5F5F5" />
-                    
+                    <Entry Text="{Binding DurationMinutes}" Keyboard="Numeric" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" />
+
                     <Label Text="Lado/Tipo" TextColor="#757575" FontSize="14" />
-                    <Picker ItemsSource="{Binding SideOptions}" SelectedIndex="{Binding SelectedSideIndex}" BackgroundColor="#F5F5F5" />
-                    
+                    <Picker ItemsSource="{Binding SideOptions}" SelectedIndex="{Binding SelectedSideIndex}" BackgroundColor="#F5F5F5" TextColor="#212121" TitleColor="#757575" />
+
                     <StackLayout IsVisible="{Binding IsBottleFeeding}">
                         <Label Text="Volume (ml)" TextColor="#757575" FontSize="14" />
-                        <Entry Text="{Binding BottleAmountMl}" Keyboard="Numeric" BackgroundColor="#F5F5F5" />
+                        <Entry Text="{Binding BottleAmountMl}" Keyboard="Numeric" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" />
                     </StackLayout>
 
                     <Label Text="Observações" TextColor="#757575" FontSize="14" />
-                    <Editor Text="{Binding Notes}" HeightRequest="80" BackgroundColor="#F5F5F5" />
+                    <Editor Text="{Binding Notes}" HeightRequest="80" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" />
 
                     <Button Text="Registrar Mamada 🍼" Command="{Binding RegisterFeedingCommand}" BackgroundColor="#1976D2" TextColor="White" CornerRadius="8" Margin="0,20,0,0" />
                 </StackLayout>
