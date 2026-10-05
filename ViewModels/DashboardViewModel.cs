@@ -127,6 +127,24 @@ namespace BabyTrackerMobile.ViewModels
         }
 
         [RelayCommand]
+        public async Task ExportDayAsync()
+        {
+            try
+            {
+                CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+                var today = DateTime.Today;
+                var feedings = await DatabaseService.GetFeedingsForDateAsync(CurrentBaby.Id, today);
+                var diapers = await DatabaseService.GetDiapersForDateAsync(CurrentBaby.Id, today);
+                var waters = await DatabaseService.GetMotherWatersForDateAsync(CurrentBaby.Id, today);
+                await ExportService.ShareDayAsync(CurrentBaby, today, feedings, diapers, waters);
+            }
+            catch (Exception ex)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", $"Não foi possível exportar: {ex.Message}", "OK");
+            }
+        }
+
+        [RelayCommand]
         public async Task DeleteFeedingAsync(FeedingRecord record)
         {
             await DatabaseService.DeleteFeedingAsync(record.Id);

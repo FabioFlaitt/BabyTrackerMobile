@@ -37,7 +37,7 @@ namespace BabyTrackerMobile.ViewModels
             IsLoading = true;
             try
             {
-                CurrentBaby = await DatabaseService.GetFirstBabyAsync();
+                CurrentBaby = await DatabaseService.GetOrCreateBabyAsync();
                 await LoadHistoryAsync();
             }
             finally { IsLoading = false; }
@@ -50,11 +50,11 @@ namespace BabyTrackerMobile.ViewModels
 
             var f = await DatabaseService.GetFeedingsForDateAsync(CurrentBaby.Id, SelectedDate);
             var d = await DatabaseService.GetDiapersForDateAsync(CurrentBaby.Id, SelectedDate);
-            
+
             Feedings = new ObservableCollection<FeedingRecord>(f);
             Diapers = new ObservableCollection<DiaperRecord>(d);
             HistoryAnalysis = MedicalGuidelinesService.AnalyzeDay(CurrentBaby, SelectedDate, f, d);
-            
+
             OnPropertyChanged(nameof(SelectedDateText));
         }
 
@@ -72,6 +72,21 @@ namespace BabyTrackerMobile.ViewModels
             {
                 SelectedDate = SelectedDate.AddDays(1);
                 await LoadHistoryAsync();
+            }
+        }
+
+        [RelayCommand]
+        public async Task ExportAsync()
+        {
+            try
+            {
+                CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+                var waters = await DatabaseService.GetMotherWatersForDateAsync(CurrentBaby.Id, SelectedDate);
+                await ExportService.ShareDayAsync(CurrentBaby, SelectedDate, Feedings, Diapers, waters);
+            }
+            catch (Exception ex)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", $"Não foi possível exportar: {ex.Message}", "OK");
             }
         }
 

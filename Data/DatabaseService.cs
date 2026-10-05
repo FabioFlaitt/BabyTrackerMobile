@@ -23,6 +23,7 @@ namespace BabyTrackerMobile.Data
                 await _database.CreateTableAsync<DiaperRecord>();
                 await _database.CreateTableAsync<WeightRecord>();
                 await _database.CreateTableAsync<MotherWaterRecord>();
+                await _database.CreateTableAsync<VitaminSchedule>();
             }
             return _database;
         }
@@ -33,11 +34,6 @@ namespace BabyTrackerMobile.Data
             return await db.Table<Baby>().FirstOrDefaultAsync();
         }
 
-        /// <summary>
-        /// Garante que exista um bebê cadastrado. Se não houver, cria um padrão
-        /// (Antonio, nascido hoje). Isso evita que os botões "fiquem sem fazer nada"
-        /// antes do primeiro cadastro em Config.
-        /// </summary>
         public static async Task<Baby> GetOrCreateBabyAsync()
         {
             var baby = await GetFirstBabyAsync();
@@ -146,6 +142,33 @@ namespace BabyTrackerMobile.Data
         {
             var db = await GetDatabaseAsync();
             await db.DeleteAsync<MotherWaterRecord>(id);
+        }
+
+        public static async Task<List<VitaminSchedule>> GetVitaminsAsync(int babyId)
+        {
+            var db = await GetDatabaseAsync();
+            return await db.Table<VitaminSchedule>()
+                .Where(v => v.BabyId == babyId)
+                .OrderBy(v => v.TimeOfDayTicks)
+                .ToListAsync();
+        }
+
+        public static async Task<int> SaveVitaminAsync(VitaminSchedule vitamin)
+        {
+            var db = await GetDatabaseAsync();
+            if (vitamin.Id > 0)
+            {
+                await db.UpdateAsync(vitamin);
+                return vitamin.Id;
+            }
+            await db.InsertAsync(vitamin);
+            return vitamin.Id;
+        }
+
+        public static async Task DeleteVitaminAsync(int id)
+        {
+            var db = await GetDatabaseAsync();
+            await db.DeleteAsync<VitaminSchedule>(id);
         }
     }
 }

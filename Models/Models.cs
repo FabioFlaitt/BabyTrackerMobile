@@ -69,6 +69,28 @@ namespace BabyTrackerMobile.Models
         public int VolumeMl { get; set; }
     }
 
+    [Table("VitaminSchedules")]
+    public class VitaminSchedule
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int BabyId { get; set; }
+        public string Name { get; set; } = "Vitamina D";
+        /// <summary>Horário diário armazenado como ticks de TimeSpan.</summary>
+        public long TimeOfDayTicks { get; set; }
+        public bool IsActive { get; set; } = true;
+
+        [Ignore]
+        public TimeSpan TimeOfDay
+        {
+            get => TimeSpan.FromTicks(TimeOfDayTicks);
+            set => TimeOfDayTicks = value.Ticks;
+        }
+
+        [Ignore]
+        public string TimeDisplay => TimeOfDay.ToString(@"hh\:mm");
+    }
+
     public class GuidelineRange
     {
         public int Minimum { get; set; }

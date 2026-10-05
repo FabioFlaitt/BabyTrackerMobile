@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BabyTrackerMobile.Data;
 using BabyTrackerMobile.Models;
+using BabyTrackerMobile.Services;
 
 namespace BabyTrackerMobile.ViewModels
 {
@@ -31,6 +33,16 @@ namespace BabyTrackerMobile.ViewModels
         [ObservableProperty]
         private bool hasBaby;
 
+        // ---- Vitamina ----
+        [ObservableProperty]
+        private ObservableCollection<VitaminSchedule> vitamins = new();
+
+        [ObservableProperty]
+        private string newVitaminName = "Vitamina D";
+
+        [ObservableProperty]
+        private TimeSpan newVitaminTime = new(9, 0, 0);
+
         public List<string> FeedingTypeOptions { get; } = new List<string> { "Amamentação", "Fórmula", "Misto" };
 
         private int selectedFeedingTypeIndex = 0;
@@ -52,23 +64,25 @@ namespace BabyTrackerMobile.ViewModels
             IsLoading = true;
             try
             {
-                var baby = await DatabaseService.GetFirstBabyAsync();
-                if (baby != null)
-                {
-                    HasBaby = true;
-                    BabyId = baby.Id;
-                    BabyName = baby.Name;
-                    BirthDate = baby.BirthDate;
-                    BirthWeightGrams = baby.BirthWeightGrams;
-                    SelectedFeedingType = baby.FeedingType;
-                    SelectedFeedingTypeIndex = (int)baby.FeedingType;
-                }
-                else
-                {
-                    HasBaby = false;
-                }
+                var baby = await DatabaseService.GetOrCreateBabyAsync();
+                HasBaby = true;
+                BabyId = baby.Id;
+                BabyName = baby.Name;
+                BirthDate = baby.BirthDate;
+                BirthWeightGrams = baby.BirthWeightGrams;
+                SelectedFeedingType = baby.FeedingType;
+                SelectedFeedingTypeIndex = (int)baby.FeedingType;
+
+                await LoadVitaminsAsync();
             }
             finally { IsLoading = false; }
+        }
+
+        public async Task LoadVitaminsAsync()
+        {
+            if (BabyId <= 0) return;
+            var list = await DatabaseService.GetVitaminsAsync(BabyId);
+            Vitamins = new ObservableCollection<VitaminSchedule>(list);
         }
 
         [RelayCommand]
@@ -93,9 +107,80 @@ namespace BabyTrackerMobile.ViewModels
 
             HasBaby = true;
             await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Sucesso", "❤️ Dados do bebê salvos!", "OK");
-            
-            // Reload to ensure ID is set if it was newly created
             await LoadAsync();
+        }
+
+        [RelayCommand]
+        public async Task AddVitaminAsync()
+        {
+            if (string.IsNullOrWhiteSpace(NewVitaminName))
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Aviso", "Informe o nome da vitamina.", "OK");
+                return;
+            }
+            if (BabyId <= 0)
+            {
+                var b = await DatabaseService.GetOrCreateBabyAsync();
+                BabyId = b.Id;
+            }
+
+            var vitamin = new VitaminSchedule
+            {
+                BabyId = BabyId,
+                Name = NewVitaminName.Trim(),
+                TimeOfDay = NewVitaminTime,
+                IsActive = true
+            };
+
+            await DatabaseService.SaveVitaminAsync(vitamin);
+            await NotificationService.ScheduleAsync(vitamin);
+            await LoadVitaminsAsync();
+
+            NewVitaminName = "Vitamina D";
+            NewVitaminTime = new TimeSpan(9, 0, 0);
+
+            await Microsoft.Maui.Controls.Shell.Current.DisplayAlert(
+                "⏰ Lembrete criado",
+                $"Você receberá uma notificação todos os dias às {vitamin.TimeDisplay}.",
+                "OK");
+        }
+
+        [RelayCommand]
+        public async Task DeleteVitaminAsync(VitaminSchedule vitamin)
+        {
+            NotificationService.Cancel(vitamin);
+            await DatabaseService.DeleteVitaminAsync(vitamin.Id);
+            await LoadVitaminsAsync();
+        }
+
+        [RelayCommand]
+        public async Task ToggleVitaminAsync(VitaminSchedule vitamin)
+        {
+            vitamin.IsActive = !vitamin.IsActive;
+            await DatabaseService.SaveVitaminAsync(vitamin);
+            if (vitamin.IsActive)
+                await NotificationService.ScheduleAsync(vitamin);
+            else
+                NotificationService.Cancel(vitamin);
+            await LoadVitaminsAsync();
+        }
+
+        [RelayCommand]
+        public async Task ExportDayAsync()
+        {
+            try
+            {
+                var baby = await DatabaseService.GetOrCreateBabyAsync();
+                var today = DateTime.Today;
+                var feedings = await DatabaseService.GetFeedingsForDateAsync(baby.Id, today);
+                var diapers = await DatabaseService.GetDiapersForDateAsync(baby.Id, today);
+                var waters = await DatabaseService.GetMotherWatersForDateAsync(baby.Id, today);
+                await ExportService.ShareDayAsync(baby, today, feedings, diapers, waters);
+            }
+            catch (Exception ex)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", $"Não foi possível exportar: {ex.Message}", "OK");
+            }
         }
     }
 }
