@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.ApplicationModel.DataTransfer;
+using BabyTrackerMobile.Data;
 using BabyTrackerMobile.Models;
 
 namespace BabyTrackerMobile.Services
@@ -20,7 +21,14 @@ namespace BabyTrackerMobile.Services
             IEnumerable<DiaperRecord> diapers,
             IEnumerable<MotherWaterRecord> waters)
         {
-            var text = BuildText(baby, date, feedings, diapers, waters);
+            // Vitaminas ativas e quais foram marcadas como tomadas no dia
+            var schedules = await DatabaseService.GetVitaminsAsync(baby.Id);
+            var takenIds = await DatabaseService.GetTakenVitaminIdsAsync(date);
+            var vitamins = new List<(string Name, string Time, bool Taken)>();
+            foreach (var v in schedules)
+                if (v.IsActive) vitamins.Add((v.Name, v.TimeDisplay, takenIds.Contains(v.Id)));
+
+            var text = BuildText(baby, date, feedings, diapers, waters, vitamins);
             await Share.Default.RequestAsync(new ShareTextRequest
             {
                 Title = $"Resumo {baby.Name} - {date:dd/MM/yyyy}",
@@ -34,7 +42,8 @@ namespace BabyTrackerMobile.Services
             DateTime date,
             IEnumerable<FeedingRecord> feedings,
             IEnumerable<DiaperRecord> diapers,
-            IEnumerable<MotherWaterRecord> waters)
+            IEnumerable<MotherWaterRecord> waters,
+            IEnumerable<(string Name, string Time, bool Taken)>? vitamins = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine($"👶 *{baby.Name}* — {date:dd/MM/yyyy}");
@@ -97,6 +106,19 @@ namespace BabyTrackerMobile.Services
             foreach (var w in waterList)
                 sb.AppendLine($"  • {w.Time:HH:mm} — {w.VolumeMl} ml");
             sb.AppendLine();
+
+            // Vitaminas
+            if (vitamins != null)
+            {
+                var vitList = new List<(string Name, string Time, bool Taken)>(vitamins);
+                if (vitList.Count > 0)
+                {
+                    sb.AppendLine("💊 *Vitamina*");
+                    foreach (var v in vitList)
+                        sb.AppendLine($"  • {v.Name} ({v.Time}) — {(v.Taken ? "✅ tomou" : "⬜ não marcada")}");
+                    sb.AppendLine();
+                }
+            }
 
             sb.AppendLine("_Enviado pelo app BabyAntonio_");
             return sb.ToString();
