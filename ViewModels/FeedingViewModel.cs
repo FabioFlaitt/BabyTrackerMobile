@@ -10,11 +10,16 @@ namespace BabyTrackerMobile.ViewModels
 {
     public partial class FeedingViewModel : ObservableObject
     {
+        private FeedingRecord? _editing;
+        private DateTime _date = DateTime.Today;
+
         [ObservableProperty]
         private Baby? currentBaby;
 
+        // TimePicker.Time é TimeSpan. Antes isto era DateTime e o binding falhava
+        // em silêncio, então o horário escolhido nunca chegava ao registro.
         [ObservableProperty]
-        private DateTime feedingTime = DateTime.Now;
+        private TimeSpan feedingTime = DateTime.Now.TimeOfDay;
 
         [ObservableProperty]
         private int durationMinutes = 15;
@@ -30,6 +35,14 @@ namespace BabyTrackerMobile.ViewModels
 
         [ObservableProperty]
         private bool isLoading;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+        [NotifyPropertyChangedFor(nameof(FormTitle))]
+        private bool isEditing;
+
+        public string ActionButtonText => IsEditing ? "Salvar alteração 💾" : "Registrar Mamada 🍼";
+        public string FormTitle => IsEditing ? "✏️ Editar Mamada" : "🍼 Registrar Mamada";
 
         public bool IsBottleFeeding => SelectedSide == BreastSide.Bottle;
 
@@ -55,10 +68,43 @@ namespace BabyTrackerMobile.ViewModels
             IsLoading = true;
             try
             {
-                // Garante que exista um bebê, mesmo sem passar pela tela Config.
                 CurrentBaby = await DatabaseService.GetOrCreateBabyAsync();
+                // Formulário novo começa com a hora atual; edição mantém a hora do registro.
+                if (!IsEditing) FeedingTime = DateTime.Now.TimeOfDay;
             }
             finally { IsLoading = false; }
+        }
+
+        /// <summary>Preenche o formulário com um registro existente (chamado pelo Painel).</summary>
+        public void BeginEdit(FeedingRecord record)
+        {
+            _editing = record;
+            _date = record.StartTime.Date;
+            FeedingTime = record.StartTime.TimeOfDay;
+            DurationMinutes = record.DurationMinutes;
+            SelectedSideIndex = (int)record.Side;
+            BottleAmountMl = record.BottleAmountMl ?? 30;
+            Notes = record.Notes ?? "";
+            IsEditing = true;
+        }
+
+        private void ResetForm()
+        {
+            _editing = null;
+            _date = DateTime.Today;
+            IsEditing = false;
+            FeedingTime = DateTime.Now.TimeOfDay;
+            DurationMinutes = 15;
+            SelectedSideIndex = 0;
+            BottleAmountMl = 30;
+            Notes = "";
+        }
+
+        [RelayCommand]
+        public async Task CancelEditAsync()
+        {
+            ResetForm();
+            await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//dashboard");
         }
 
         [RelayCommand]
@@ -66,13 +112,29 @@ namespace BabyTrackerMobile.ViewModels
         {
             try
             {
-                // Carrega/garante bebê se ainda não foi feito
                 CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+
+                var when = _date.Add(new TimeSpan(FeedingTime.Hours, FeedingTime.Minutes, 0));
+
+                if (_editing != null)
+                {
+                    _editing.StartTime = when;
+                    _editing.DurationMinutes = DurationMinutes;
+                    _editing.Side = SelectedSide;
+                    _editing.BottleAmountMl = IsBottleFeeding ? BottleAmountMl : null;
+                    _editing.Notes = Notes;
+                    await DatabaseService.UpdateFeedingAsync(_editing);
+
+                    ResetForm();
+                    await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Alterado", "🍼 Mamada atualizada!", "OK");
+                    await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//dashboard");
+                    return;
+                }
 
                 var record = new FeedingRecord
                 {
                     BabyId = CurrentBaby.Id,
-                    StartTime = FeedingTime,
+                    StartTime = when,
                     DurationMinutes = DurationMinutes,
                     Side = SelectedSide,
                     BottleAmountMl = IsBottleFeeding ? BottleAmountMl : null,
@@ -80,13 +142,7 @@ namespace BabyTrackerMobile.ViewModels
                 };
 
                 await DatabaseService.AddFeedingAsync(record);
-
-                // Reset form
-                FeedingTime = DateTime.Now;
-                DurationMinutes = 15;
-                SelectedSideIndex = 0;
-                BottleAmountMl = 30;
-                Notes = "";
+                ResetForm();
 
                 await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "🍼 Mamada registrada com sucesso!", "OK");
             }

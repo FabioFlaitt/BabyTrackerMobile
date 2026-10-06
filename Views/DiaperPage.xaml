@@ -10,7 +10,7 @@
         <StackLayout Spacing="15" Padding="15">
             <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
                 <StackLayout Spacing="15">
-                    <Label Text="🧷 Registrar Fralda" FontSize="20" FontAttributes="Bold" TextColor="#212121" HorizontalOptions="Center" Margin="0,0,0,10" />
+                    <Label Text="{Binding FormTitle}" FontSize="20" FontAttributes="Bold" TextColor="#212121" HorizontalOptions="Center" Margin="0,0,0,10" />
 
                     <Label Text="Horário" TextColor="#757575" FontSize="14" />
                     <TimePicker Time="{Binding DiaperTime}" BackgroundColor="#F5F5F5" TextColor="#212121" />
@@ -36,7 +36,8 @@
                     <Label Text="Observações" TextColor="#757575" FontSize="14" />
                     <Editor Text="{Binding Notes}" HeightRequest="80" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" />
 
-                    <Button Text="Registrar Fralda 🧷" Command="{Binding RegisterDiaperCommand}" BackgroundColor="#1976D2" TextColor="White" CornerRadius="8" Margin="0,20,0,0" />
+                    <Button Text="{Binding ActionButtonText}" Command="{Binding RegisterDiaperCommand}" BackgroundColor="#1976D2" TextColor="White" CornerRadius="8" Margin="0,20,0,0" />
+                    <Button Text="Cancelar edição" Command="{Binding CancelEditCommand}" IsVisible="{Binding IsEditing}" BackgroundColor="#E0E0E0" TextColor="#212121" CornerRadius="8" />
                 </StackLayout>
             </Frame>
         </StackLayout>

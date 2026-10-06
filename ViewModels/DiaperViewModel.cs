@@ -10,11 +10,15 @@ namespace BabyTrackerMobile.ViewModels
 {
     public partial class DiaperViewModel : ObservableObject
     {
+        private DiaperRecord? _editing;
+        private DateTime _date = DateTime.Today;
+
         [ObservableProperty]
         private Baby? currentBaby;
 
+        // TimePicker.Time é TimeSpan (antes era DateTime e o horário informado era ignorado).
         [ObservableProperty]
-        private DateTime diaperTime = DateTime.Now;
+        private TimeSpan diaperTime = DateTime.Now.TimeOfDay;
 
         [ObservableProperty]
         private bool isWet = true;
@@ -33,6 +37,14 @@ namespace BabyTrackerMobile.ViewModels
 
         [ObservableProperty]
         private bool isLoading;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+        [NotifyPropertyChangedFor(nameof(FormTitle))]
+        private bool isEditing;
+
+        public string ActionButtonText => IsEditing ? "Salvar alteração 💾" : "Registrar Fralda 🧷";
+        public string FormTitle => IsEditing ? "✏️ Editar Fralda" : "🧷 Registrar Fralda";
 
         public List<string> ColorOptions { get; } = new List<string>
         {
@@ -77,8 +89,43 @@ namespace BabyTrackerMobile.ViewModels
             try
             {
                 CurrentBaby = await DatabaseService.GetOrCreateBabyAsync();
+                if (!IsEditing) DiaperTime = DateTime.Now.TimeOfDay;
             }
             finally { IsLoading = false; }
+        }
+
+        /// <summary>Preenche o formulário com um registro existente (chamado pelo Painel).</summary>
+        public void BeginEdit(DiaperRecord record)
+        {
+            _editing = record;
+            _date = record.Time.Date;
+            DiaperTime = record.Time.TimeOfDay;
+            IsWet = record.IsWet;
+            IsDirty = record.IsDirty;
+            SelectedColorIndex = (int)(record.Color ?? StoolColor.Yellow);
+            SelectedConsistencyIndex = (int)(record.Consistency ?? StoolConsistency.Soft);
+            Notes = record.Notes ?? "";
+            IsEditing = true;
+        }
+
+        private void ResetForm()
+        {
+            _editing = null;
+            _date = DateTime.Today;
+            IsEditing = false;
+            DiaperTime = DateTime.Now.TimeOfDay;
+            IsWet = true;
+            IsDirty = false;
+            SelectedColorIndex = 2;
+            SelectedConsistencyIndex = 2;
+            Notes = "";
+        }
+
+        [RelayCommand]
+        public async Task CancelEditAsync()
+        {
+            ResetForm();
+            await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//dashboard");
         }
 
         [RelayCommand]
@@ -94,10 +141,28 @@ namespace BabyTrackerMobile.ViewModels
                     return;
                 }
 
+                var when = _date.Add(new TimeSpan(DiaperTime.Hours, DiaperTime.Minutes, 0));
+
+                if (_editing != null)
+                {
+                    _editing.Time = when;
+                    _editing.IsWet = IsWet;
+                    _editing.IsDirty = IsDirty;
+                    _editing.Color = IsDirty ? SelectedColor : null;
+                    _editing.Consistency = IsDirty ? SelectedConsistency : null;
+                    _editing.Notes = Notes;
+                    await DatabaseService.UpdateDiaperAsync(_editing);
+
+                    ResetForm();
+                    await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Alterado", "🧷 Fralda atualizada!", "OK");
+                    await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//dashboard");
+                    return;
+                }
+
                 var record = new DiaperRecord
                 {
                     BabyId = CurrentBaby.Id,
-                    Time = DiaperTime,
+                    Time = when,
                     IsWet = IsWet,
                     IsDirty = IsDirty,
                     Color = IsDirty ? SelectedColor : null,
@@ -106,14 +171,7 @@ namespace BabyTrackerMobile.ViewModels
                 };
 
                 await DatabaseService.AddDiaperAsync(record);
-
-                // Reset form
-                DiaperTime = DateTime.Now;
-                IsWet = true;
-                IsDirty = false;
-                SelectedColorIndex = 2;
-                SelectedConsistencyIndex = 2;
-                Notes = "";
+                ResetForm();
 
                 await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Registrado", "🧷 Fralda registrada com sucesso!", "OK");
             }

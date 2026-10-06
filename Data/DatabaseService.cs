@@ -78,6 +78,18 @@ namespace BabyTrackerMobile.Data
                 .ToListAsync();
         }
 
+        public static async Task UpdateFeedingAsync(FeedingRecord record)
+        {
+            var db = await GetDatabaseAsync();
+            await db.UpdateAsync(record);
+        }
+
+        public static async Task UpdateDiaperAsync(DiaperRecord record)
+        {
+            var db = await GetDatabaseAsync();
+            await db.UpdateAsync(record);
+        }
+
         public static async Task DeleteFeedingAsync(int id)
         {
             var db = await GetDatabaseAsync();

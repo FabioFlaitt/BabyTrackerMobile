@@ -149,6 +149,7 @@
                             <SwipeView>
                                 <SwipeView.RightItems>
                                     <SwipeItems>
+                                        <SwipeItem Text="Editar" BackgroundColor="#1976D2" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=EditFeedingCommand}" CommandParameter="{Binding .}" />
                                         <SwipeItem Text="Deletar" BackgroundColor="#C62828" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=DeleteFeedingCommand}" CommandParameter="{Binding .}" />
                                     </SwipeItems>
                                 </SwipeView.RightItems>
@@ -174,6 +175,7 @@
                             <SwipeView>
                                 <SwipeView.RightItems>
                                     <SwipeItems>
+                                        <SwipeItem Text="Editar" BackgroundColor="#1976D2" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=EditDiaperCommand}" CommandParameter="{Binding .}" />
                                         <SwipeItem Text="Deletar" BackgroundColor="#C62828" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=DeleteDiaperCommand}" CommandParameter="{Binding .}" />
                                     </SwipeItems>
                                 </SwipeView.RightItems>

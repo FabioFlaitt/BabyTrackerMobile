@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BabyTrackerMobile.Data;
@@ -187,6 +188,27 @@ namespace BabyTrackerMobile.ViewModels
             {
                 await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", $"Não foi possível exportar: {ex.Message}", "OK");
             }
+        }
+
+        private static T? Resolve<T>() where T : class
+            => Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services.GetService<T>();
+
+        [RelayCommand]
+        public async Task EditFeedingAsync(FeedingRecord record)
+        {
+            var vm = Resolve<FeedingViewModel>();
+            if (vm == null) return;
+            vm.BeginEdit(record);
+            await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//feeding");
+        }
+
+        [RelayCommand]
+        public async Task EditDiaperAsync(DiaperRecord record)
+        {
+            var vm = Resolve<DiaperViewModel>();
+            if (vm == null) return;
+            vm.BeginEdit(record);
+            await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//diaper");
         }
 
         [RelayCommand]
