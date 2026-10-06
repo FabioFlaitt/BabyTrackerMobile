@@ -82,6 +82,16 @@ namespace BabyTrackerMobile.ViewModels
             OnPropertyChanged(nameof(MotherWaterText));
         }
 
+        // Dia exibido no Painel; usado para detectar a virada de dia.
+        private DateTime _loadedDate = DateTime.Today;
+
+        /// <summary>Recarrega o Painel se o dia mudou desde a última carga.</summary>
+        public void CheckDayRollover()
+        {
+            if (!IsLoading && DateTime.Today != _loadedDate)
+                LoadCommand.Execute(null);
+        }
+
         [RelayCommand]
         public async Task LoadAsync()
         {
@@ -101,6 +111,7 @@ namespace BabyTrackerMobile.ViewModels
         {
             if (CurrentBaby == null) return;
             var date = DateTime.Today;
+            _loadedDate = date;
             var feedings = await DatabaseService.GetFeedingsForDateAsync(CurrentBaby.Id, date);
             var diapers = await DatabaseService.GetDiapersForDateAsync(CurrentBaby.Id, date);
             var waters = await DatabaseService.GetMotherWatersForDateAsync(CurrentBaby.Id, date);
