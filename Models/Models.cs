@@ -91,6 +91,17 @@ namespace BabyTrackerMobile.Models
         public string TimeDisplay => TimeOfDay.ToString(@"hh\:mm");
     }
 
+    /// <summary>Registro de que a vitamina foi tomada em determinado dia.</summary>
+    [Table("VitaminLogs")]
+    public class VitaminLog
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int VitaminId { get; set; }
+        public DateTime Date { get; set; } = DateTime.Today;
+        public DateTime TakenAt { get; set; } = DateTime.Now;
+    }
+
     public class GuidelineRange
     {
         public int Minimum { get; set; }

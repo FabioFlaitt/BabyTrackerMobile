@@ -24,6 +24,7 @@ namespace BabyTrackerMobile.Data
                 await _database.CreateTableAsync<WeightRecord>();
                 await _database.CreateTableAsync<MotherWaterRecord>();
                 await _database.CreateTableAsync<VitaminSchedule>();
+                await _database.CreateTableAsync<VitaminLog>();
             }
             return _database;
         }
@@ -169,6 +170,37 @@ namespace BabyTrackerMobile.Data
         {
             var db = await GetDatabaseAsync();
             await db.DeleteAsync<VitaminSchedule>(id);
+            await db.ExecuteAsync("DELETE FROM VitaminLogs WHERE VitaminId = ?", id);
+        }
+
+        /// <summary>Ids das vitaminas já marcadas como tomadas no dia.</summary>
+        public static async Task<HashSet<int>> GetTakenVitaminIdsAsync(DateTime date)
+        {
+            var db = await GetDatabaseAsync();
+            var day = date.Date;
+            var logs = await db.Table<VitaminLog>().Where(l => l.Date == day).ToListAsync();
+            var set = new HashSet<int>();
+            foreach (var l in logs) set.Add(l.VitaminId);
+            return set;
+        }
+
+        public static async Task SetVitaminTakenAsync(int vitaminId, DateTime date, bool taken)
+        {
+            var db = await GetDatabaseAsync();
+            var day = date.Date;
+            var existing = await db.Table<VitaminLog>()
+                .Where(l => l.VitaminId == vitaminId && l.Date == day)
+                .ToListAsync();
+
+            if (taken)
+            {
+                if (existing.Count == 0)
+                    await db.InsertAsync(new VitaminLog { VitaminId = vitaminId, Date = day, TakenAt = DateTime.Now });
+            }
+            else
+            {
+                foreach (var l in existing) await db.DeleteAsync<VitaminLog>(l.Id);
+            }
         }
     }
 }

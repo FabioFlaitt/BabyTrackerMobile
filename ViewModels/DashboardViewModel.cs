@@ -9,8 +9,44 @@ using BabyTrackerMobile.Services;
 
 namespace BabyTrackerMobile.ViewModels
 {
+    /// <summary>Linha do checklist de vitaminas do dia no Painel.</summary>
+    public partial class VitaminCheckItem : ObservableObject
+    {
+        private readonly int _vitaminId;
+        private readonly DateTime _date;
+        private bool _loading = true;
+
+        public VitaminCheckItem(VitaminSchedule vitamin, DateTime date, bool taken)
+        {
+            _vitaminId = vitamin.Id;
+            _date = date;
+            Name = vitamin.Name;
+            TimeDisplay = vitamin.TimeDisplay;
+            isTaken = taken;
+            _loading = false;
+        }
+
+        public string Name { get; }
+        public string TimeDisplay { get; }
+
+        [ObservableProperty]
+        private bool isTaken;
+
+        partial void OnIsTakenChanged(bool value)
+        {
+            if (_loading) return;
+            _ = DatabaseService.SetVitaminTakenAsync(_vitaminId, _date, value);
+        }
+    }
+
     public partial class DashboardViewModel : ObservableObject
     {
+        [ObservableProperty]
+        private ObservableCollection<VitaminCheckItem> todayVitamins = new();
+
+        [ObservableProperty]
+        private bool hasVitamins;
+
         [ObservableProperty]
         private Baby? currentBaby;
 
@@ -73,6 +109,15 @@ namespace BabyTrackerMobile.ViewModels
             var total = 0;
             foreach (var w in waters) total += w.VolumeMl;
             TotalMotherWaterMl = total;
+
+            var vitamins = await DatabaseService.GetVitaminsAsync(CurrentBaby.Id);
+            var taken = await DatabaseService.GetTakenVitaminIdsAsync(date);
+            var items = new ObservableCollection<VitaminCheckItem>();
+            foreach (var v in vitamins)
+                if (v.IsActive) items.Add(new VitaminCheckItem(v, date, taken.Contains(v.Id)));
+            TodayVitamins = items;
+            HasVitamins = items.Count > 0;
+
             TodayAnalysis = MedicalGuidelinesService.AnalyzeDay(CurrentBaby, date, feedings, diapers);
             OnPropertyChanged(nameof(DayOfLifeText));
         }

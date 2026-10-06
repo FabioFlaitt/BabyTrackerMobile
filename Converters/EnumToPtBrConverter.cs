@@ -81,6 +81,14 @@ namespace BabyTrackerMobile.Converters
         public object ConvertBack(object? v, Type t, object? p, CultureInfo c) => throw new NotImplementedException();
     }
 
+    public class InvertBoolConverter : IValueConverter
+    {
+        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+            => value is bool b ? !b : true;
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+            => value is bool b ? !b : false;
+    }
+
     /// <summary>Resumo visual da fralda em texto curto.</summary>
     public class DiaperDetailConverter : IValueConverter
     {

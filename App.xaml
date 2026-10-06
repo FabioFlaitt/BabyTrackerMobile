@@ -15,6 +15,7 @@
             <conv:FeedingDetailConverter x:Key="FeedingDetail" />
             <conv:DiaperDetailConverter x:Key="DiaperDetail" />
             <conv:HasTextConverter x:Key="HasText" />
+            <conv:InvertBoolConverter x:Key="InvertBool" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

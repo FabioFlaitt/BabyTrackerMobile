@@ -98,6 +98,25 @@
                     </StackLayout>
                 </Frame>
 
+                <!-- Vitamina do dia -->
+                <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False">
+                    <StackLayout Spacing="8">
+                        <Label Text="💊 Vitamina de hoje" FontSize="16" FontAttributes="Bold" TextColor="#212121" />
+                        <Label Text="Nenhuma vitamina cadastrada. Cadastre em Config." TextColor="#757575" FontSize="12" FontAttributes="Italic" IsVisible="{Binding HasVitamins, Converter={StaticResource InvertBool}}" />
+                        <StackLayout BindableLayout.ItemsSource="{Binding TodayVitamins}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:VitaminCheckItem">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="0,4">
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsTaken}" Color="#7B1FA2" VerticalOptions="Center" />
+                                        <Label Grid.Column="1" Text="{Binding Name}" TextColor="#212121" FontSize="15" VerticalOptions="Center" />
+                                        <Label Grid.Column="2" Text="{Binding TimeDisplay}" TextColor="#7B1FA2" FontAttributes="Bold" VerticalOptions="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </StackLayout>
+                    </StackLayout>
+                </Frame>
+
                 <!-- Exportar WhatsApp -->
                 <Button Text="📤 Enviar resumo do dia (WhatsApp etc)" Command="{Binding ExportDayCommand}" BackgroundColor="#25D366" TextColor="White" CornerRadius="8" />
 
