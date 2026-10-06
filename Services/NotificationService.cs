@@ -1,8 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Plugin.LocalNotification;
-using Plugin.LocalNotification.AndroidOption;
-using Plugin.LocalNotification.iOSOption;
 using BabyTrackerMobile.Models;
 
 namespace BabyTrackerMobile.Services
@@ -17,7 +15,7 @@ namespace BabyTrackerMobile.Services
         /// <summary>Pede permissão de notificação ao usuário (iOS 10+).</summary>
         public static async Task<bool> RequestPermissionAsync()
         {
-            if (LocalNotificationCenter.Current.AreNotificationsEnabled())
+            if (await LocalNotificationCenter.Current.AreNotificationsEnabled())
                 return true;
             return await LocalNotificationCenter.Current.RequestNotificationPermission();
         }
@@ -48,15 +46,6 @@ namespace BabyTrackerMobile.Services
                 {
                     NotifyTime = next,
                     NotifyRepeatInterval = TimeSpan.FromDays(1)
-                },
-                iOS = new iOSOptions
-                {
-                    PlayForegroundSound = true
-                },
-                Android = new AndroidOptions
-                {
-                    ChannelId = "vitamin_reminders",
-                    Priority = AndroidPriority.High
                 }
             };
 

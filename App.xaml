@@ -14,6 +14,7 @@
             <conv:EnumToPtBrConverter x:Key="EnumToPtBr" />
             <conv:FeedingDetailConverter x:Key="FeedingDetail" />
             <conv:DiaperDetailConverter x:Key="DiaperDetail" />
+            <conv:HasTextConverter x:Key="HasText" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

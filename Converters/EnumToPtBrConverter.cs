@@ -73,6 +73,14 @@ namespace BabyTrackerMobile.Converters
         public object ConvertBack(object? v, Type t, object? p, CultureInfo c) => throw new NotImplementedException();
     }
 
+    /// <summary>true se a string tem texto (usado para esconder observações vazias).</summary>
+    public class HasTextConverter : IValueConverter
+    {
+        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+            => value is string s && !string.IsNullOrWhiteSpace(s);
+        public object ConvertBack(object? v, Type t, object? p, CultureInfo c) => throw new NotImplementedException();
+    }
+
     /// <summary>Resumo visual da fralda em texto curto.</summary>
     public class DiaperDetailConverter : IValueConverter
     {
