@@ -26,6 +26,9 @@ namespace BabyTrackerMobile.Services
             // Sono do dia
             var sleeps = await DatabaseService.GetSleepsForDateAsync(baby.Id, date);
 
+            // Conquistas registradas nesta data
+            var milestones = await DatabaseService.GetMilestonesAchievedOnAsync(baby.Id, date);
+
             // Vitaminas ativas e quais foram marcadas como tomadas no dia
             var schedules = await DatabaseService.GetVitaminsAsync(baby.Id);
             var takenIds = await DatabaseService.GetTakenVitaminIdsAsync(date);
@@ -38,7 +41,7 @@ namespace BabyTrackerMobile.Services
                 if (v.IsMother) motherVit.Add(line); else babyVit.Add(line);
             }
 
-            var text = BuildText(baby, date, feedings, diapers, waters, sleeps, babyVit, motherVit);
+            var text = BuildText(baby, date, feedings, diapers, waters, sleeps, babyVit, motherVit, milestones);
             await Share.Default.RequestAsync(new ShareTextRequest
             {
                 Title = $"Resumo {baby.Name} - {date:dd/MM/yyyy}",
@@ -55,7 +58,8 @@ namespace BabyTrackerMobile.Services
             IEnumerable<MotherWaterRecord> waters,
             IEnumerable<SleepRecord>? sleeps = null,
             IEnumerable<VitaminLine>? babyVitamins = null,
-            IEnumerable<VitaminLine>? motherVitamins = null)
+            IEnumerable<VitaminLine>? motherVitamins = null,
+            IEnumerable<Milestone>? milestones = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine($"👶 *{baby.Name}* — {date:dd/MM/yyyy}");
@@ -149,6 +153,19 @@ namespace BabyTrackerMobile.Services
             AppendVitamins(sb, "💊 *Vitamina do bebê*", babyVitamins);
             // Vitaminas da mãe
             AppendVitamins(sb, "💊 *Vitamina da mãe*", motherVitamins);
+
+            // Conquistas do dia
+            if (milestones != null)
+            {
+                var mlist = new List<Milestone>(milestones);
+                if (mlist.Count > 0)
+                {
+                    sb.AppendLine("🏆 *Conquista(s) de hoje!*");
+                    foreach (var m in mlist)
+                        sb.AppendLine($"  • {m.Icon} {m.Title}");
+                    sb.AppendLine();
+                }
+            }
 
             sb.AppendLine("_Enviado pelo app BabyAntonio_");
             return sb.ToString();

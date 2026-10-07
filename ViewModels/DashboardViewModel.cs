@@ -80,6 +80,14 @@ namespace BabyTrackerMobile.ViewModels
         private int totalMotherWaterMl;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(MilestonesText))]
+        private int milestonesAchieved;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(MilestonesText))]
+        private int milestonesTotal;
+
+        [ObservableProperty]
         private bool isLoading;
 
         public string DayOfLifeText => CurrentBaby != null
@@ -91,6 +99,8 @@ namespace BabyTrackerMobile.ViewModels
         public string MotherWaterText => $"{TotalMotherWaterMl} ml hoje";
 
         public string SleepTotalText => $"{TotalSleepMinutes / 60}h{TotalSleepMinutes % 60:00} hoje";
+
+        public string MilestonesText => $"{MilestonesAchieved}/{MilestonesTotal} conquistadas";
 
         partial void OnTotalMotherWaterMlChanged(int value)
         {
@@ -159,6 +169,10 @@ namespace BabyTrackerMobile.ViewModels
             TodayMotherVitamins = motherItems;
             HasMotherVitamins = motherItems.Count > 0;
 
+            await DatabaseService.EnsureMilestonesSeededAsync(CurrentBaby.Id);
+            MilestonesAchieved = await DatabaseService.CountAchievedMilestonesAsync(CurrentBaby.Id);
+            MilestonesTotal = await DatabaseService.CountMilestonesAsync(CurrentBaby.Id);
+
             TodayAnalysis = MedicalGuidelinesService.AnalyzeDay(CurrentBaby, date, feedings, diapers);
             OnPropertyChanged(nameof(DayOfLifeText));
         }
@@ -215,6 +229,10 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task GoToSleepAsync()
             => await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//sleep");
+
+        [RelayCommand]
+        public async Task GoToMilestonesAsync()
+            => await Microsoft.Maui.Controls.Shell.Current.GoToAsync("milestones");
 
         [RelayCommand]
         public async Task ExportDayAsync()

@@ -133,6 +133,28 @@ namespace BabyTrackerMobile.Models
         public DateTime TakenAt { get; set; } = DateTime.Now;
     }
 
+    /// <summary>Conquista/marco do bebê (primeiro sorriso, engatinhar, andar...).</summary>
+    [Table("Milestones")]
+    public class Milestone
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int BabyId { get; set; }
+        public string Icon { get; set; } = "🏆";
+        public string Title { get; set; } = string.Empty;
+        /// <summary>Data em que aconteceu; null = ainda não conquistada.</summary>
+        public DateTime? AchievedDate { get; set; }
+        public string Notes { get; set; } = string.Empty;
+        public int SortOrder { get; set; }
+        public bool IsCustom { get; set; }
+
+        [Ignore]
+        public bool Achieved => AchievedDate.HasValue;
+
+        [Ignore]
+        public string AchievedText => AchievedDate.HasValue ? $"🎉 {AchievedDate.Value:dd/MM/yyyy}" : "Ainda não";
+    }
+
     public class GuidelineRange
     {
         public int Minimum { get; set; }

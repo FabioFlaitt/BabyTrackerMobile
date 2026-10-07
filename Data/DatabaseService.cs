@@ -26,6 +26,7 @@ namespace BabyTrackerMobile.Data
                 await _database.CreateTableAsync<SleepRecord>();
                 await _database.CreateTableAsync<VitaminSchedule>();
                 await _database.CreateTableAsync<VitaminLog>();
+                await _database.CreateTableAsync<Milestone>();
             }
             return _database;
         }
@@ -187,6 +188,87 @@ namespace BabyTrackerMobile.Data
                 .Where(s => s.BabyId == babyId && s.Start >= start && s.Start < end)
                 .OrderByDescending(s => s.Start)
                 .ToListAsync();
+        }
+
+        // ---- Conquistas (marcos) ----
+        private static readonly (string Icon, string Title)[] DefaultMilestones =
+        {
+            ("😊", "Primeiro sorriso"),
+            ("🙆", "Firmou o pescoço"),
+            ("🔄", "Primeira rolada"),
+            ("🪑", "Sentou sozinho"),
+            ("🐛", "Primeira engatinhada"),
+            ("🦷", "Primeiro dentinho"),
+            ("🧍", "Ficou em pé"),
+            ("🗣️", "Primeira palavra"),
+            ("👣", "Primeira andada"),
+        };
+
+        public static async Task EnsureMilestonesSeededAsync(int babyId)
+        {
+            var db = await GetDatabaseAsync();
+            var count = await db.Table<Milestone>().Where(m => m.BabyId == babyId).CountAsync();
+            if (count > 0) return;
+            var order = 0;
+            foreach (var (icon, title) in DefaultMilestones)
+            {
+                await db.InsertAsync(new Milestone
+                {
+                    BabyId = babyId,
+                    Icon = icon,
+                    Title = title,
+                    SortOrder = order++,
+                    IsCustom = false
+                });
+            }
+        }
+
+        public static async Task<List<Milestone>> GetMilestonesAsync(int babyId)
+        {
+            var db = await GetDatabaseAsync();
+            return await db.Table<Milestone>()
+                .Where(m => m.BabyId == babyId)
+                .OrderBy(m => m.SortOrder)
+                .ToListAsync();
+        }
+
+        public static async Task<List<Milestone>> GetMilestonesAchievedOnAsync(int babyId, DateTime date)
+        {
+            var db = await GetDatabaseAsync();
+            var start = date.Date;
+            var end = start.AddDays(1);
+            return await db.Table<Milestone>()
+                .Where(m => m.BabyId == babyId && m.AchievedDate >= start && m.AchievedDate < end)
+                .ToListAsync();
+        }
+
+        public static async Task SaveMilestoneAsync(Milestone milestone)
+        {
+            var db = await GetDatabaseAsync();
+            if (milestone.Id > 0)
+                await db.UpdateAsync(milestone);
+            else
+                await db.InsertAsync(milestone);
+        }
+
+        public static async Task DeleteMilestoneAsync(int id)
+        {
+            var db = await GetDatabaseAsync();
+            await db.DeleteAsync<Milestone>(id);
+        }
+
+        public static async Task<int> CountAchievedMilestonesAsync(int babyId)
+        {
+            var db = await GetDatabaseAsync();
+            return await db.Table<Milestone>()
+                .Where(m => m.BabyId == babyId && m.AchievedDate != null)
+                .CountAsync();
+        }
+
+        public static async Task<int> CountMilestonesAsync(int babyId)
+        {
+            var db = await GetDatabaseAsync();
+            return await db.Table<Milestone>().Where(m => m.BabyId == babyId).CountAsync();
         }
 
         // ---- Vitaminas ----

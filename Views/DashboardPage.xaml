@@ -165,6 +165,17 @@
                     </StackLayout>
                 </Frame>
 
+                <!-- Conquistas -->
+                <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False">
+                    <StackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="🏆 Conquistas" FontSize="16" FontAttributes="Bold" TextColor="#212121" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="{Binding MilestonesText}" FontSize="14" TextColor="#FB8C00" FontAttributes="Bold" VerticalOptions="Center" />
+                        </Grid>
+                        <Button Text="🏆 Ver conquistas (sorriso, engatinhar, andar...)" Command="{Binding GoToMilestonesCommand}" BackgroundColor="#FB8C00" TextColor="White" CornerRadius="8" />
+                    </StackLayout>
+                </Frame>
+
                 <!-- Exportar WhatsApp -->
                 <Button Text="📤 Enviar resumo do dia (WhatsApp etc)" Command="{Binding ExportDayCommand}" BackgroundColor="#25D366" TextColor="White" CornerRadius="8" />
 

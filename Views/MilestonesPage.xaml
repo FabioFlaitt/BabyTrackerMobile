@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:BabyTrackerMobile.ViewModels"
+             x:Class="BabyTrackerMobile.Views.MilestonesPage"
+             x:DataType="vm:MilestonesViewModel"
+             Title="Conquistas"
+             BackgroundColor="#F5F5F5">
+    <ScrollView>
+        <StackLayout Spacing="15" Padding="15">
+
+            <Frame BackgroundColor="#FF8F00" CornerRadius="12" Padding="20" HasShadow="False">
+                <StackLayout>
+                    <Label Text="🏆 Conquistas do bebê" FontSize="20" TextColor="White" FontAttributes="Bold" HorizontalOptions="Center" />
+                    <Label Text="{Binding ProgressText}" FontSize="14" TextColor="White" HorizontalOptions="Center" />
+                </StackLayout>
+            </Frame>
+
+            <Button Text="➕ Adicionar conquista" Command="{Binding AddCustomCommand}" BackgroundColor="#FB8C00" TextColor="White" CornerRadius="8" />
+
+            <Label Text="Marque quando acontecer e ajuste a data." TextColor="#757575" FontSize="12" FontAttributes="Italic" />
+
+            <StackLayout BindableLayout.ItemsSource="{Binding Milestones}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MilestoneItem">
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems>
+                                    <SwipeItem Text="Deletar" BackgroundColor="#C62828"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MilestonesViewModel}}, Path=DeleteCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Frame CornerRadius="10" Padding="12" Margin="0,0,0,8" BackgroundColor="White" HasShadow="False">
+                                <StackLayout Spacing="8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                        <Label Grid.Column="0" Text="{Binding Icon}" FontSize="26" VerticalOptions="Center" />
+                                        <StackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <Label Text="{Binding Title}" TextColor="#212121" FontSize="15" FontAttributes="Bold" />
+                                            <Label Text="{Binding StatusText}" TextColor="#757575" FontSize="12" />
+                                        </StackLayout>
+                                        <CheckBox Grid.Column="2" IsChecked="{Binding Achieved}" Color="#FB8C00" VerticalOptions="Center" />
+                                    </Grid>
+                                    <StackLayout IsVisible="{Binding Achieved}" Orientation="Horizontal" Spacing="8">
+                                        <Label Text="📅 Data:" TextColor="#757575" FontSize="13" VerticalOptions="Center" />
+                                        <DatePicker Date="{Binding Date}" BackgroundColor="#F5F5F5" TextColor="#212121" />
+                                    </StackLayout>
+                                </StackLayout>
+                            </Frame>
+                        </SwipeView>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </StackLayout>
+
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

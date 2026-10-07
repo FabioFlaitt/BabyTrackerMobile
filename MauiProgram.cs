@@ -29,6 +29,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SleepViewModel>();
         builder.Services.AddSingleton<HistoryViewModel>();
         builder.Services.AddSingleton<SettingsViewModel>();
+        builder.Services.AddTransient<MilestonesViewModel>();
 
         // Pages
         builder.Services.AddSingleton<DashboardPage>();
@@ -37,6 +38,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SleepPage>();
         builder.Services.AddSingleton<HistoryPage>();
         builder.Services.AddSingleton<SettingsPage>();
+        builder.Services.AddTransient<MilestonesPage>();
 
         return builder.Build();
     }
