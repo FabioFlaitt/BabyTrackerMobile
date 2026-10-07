@@ -43,6 +43,10 @@ namespace BabyTrackerMobile.ViewModels
         [ObservableProperty]
         private TimeSpan newVitaminTime = new(9, 0, 0);
 
+        /// <summary>true = a vitamina sendo cadastrada é da mãe.</summary>
+        [ObservableProperty]
+        private bool newVitaminIsMother;
+
         public List<string> FeedingTypeOptions { get; } = new List<string> { "Amamentação", "Fórmula", "Misto" };
 
         private int selectedFeedingTypeIndex = 0;
@@ -129,19 +133,22 @@ namespace BabyTrackerMobile.ViewModels
                 BabyId = BabyId,
                 Name = NewVitaminName.Trim(),
                 TimeOfDay = NewVitaminTime,
-                IsActive = true
+                IsActive = true,
+                IsMother = NewVitaminIsMother
             };
 
             await DatabaseService.SaveVitaminAsync(vitamin);
             await NotificationService.ScheduleAsync(vitamin);
             await LoadVitaminsAsync();
 
+            var owner = NewVitaminIsMother ? "da mãe" : "do bebê";
             NewVitaminName = "Vitamina D";
             NewVitaminTime = new TimeSpan(9, 0, 0);
+            NewVitaminIsMother = false;
 
             await Microsoft.Maui.Controls.Shell.Current.DisplayAlert(
                 "⏰ Lembrete criado",
-                $"Você receberá uma notificação todos os dias às {vitamin.TimeDisplay}.",
+                $"Vitamina {owner}: você receberá uma notificação todos os dias às {vitamin.TimeDisplay}.",
                 "OK");
         }
 

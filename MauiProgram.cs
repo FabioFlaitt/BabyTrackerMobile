@@ -26,6 +26,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<DashboardViewModel>();
         builder.Services.AddSingleton<FeedingViewModel>();
         builder.Services.AddSingleton<DiaperViewModel>();
+        builder.Services.AddSingleton<SleepViewModel>();
         builder.Services.AddSingleton<HistoryViewModel>();
         builder.Services.AddSingleton<SettingsViewModel>();
 
@@ -33,6 +34,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<DashboardPage>();
         builder.Services.AddSingleton<FeedingPage>();
         builder.Services.AddSingleton<DiaperPage>();
+        builder.Services.AddSingleton<SleepPage>();
         builder.Services.AddSingleton<HistoryPage>();
         builder.Services.AddSingleton<SettingsPage>();
 

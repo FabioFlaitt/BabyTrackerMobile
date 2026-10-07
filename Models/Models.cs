@@ -33,6 +33,9 @@ namespace BabyTrackerMobile.Models
         public BreastSide Side { get; set; } = BreastSide.Left;
         public double? BottleAmountMl { get; set; }
         public string Notes { get; set; } = string.Empty;
+
+        [Ignore]
+        public bool IsBottle => Side == BreastSide.Bottle;
     }
 
     [Table("Diapers")]
@@ -69,6 +72,29 @@ namespace BabyTrackerMobile.Models
         public int VolumeMl { get; set; }
     }
 
+    /// <summary>Período de sono do bebê.</summary>
+    [Table("Sleeps")]
+    public class SleepRecord
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int BabyId { get; set; }
+        public DateTime Start { get; set; } = DateTime.Now;
+        public DateTime End { get; set; } = DateTime.Now;
+
+        [Ignore]
+        public TimeSpan Duration => End > Start ? End - Start : TimeSpan.Zero;
+
+        [Ignore]
+        public string DurationText
+        {
+            get { var d = Duration; return $"{(int)d.TotalHours}h{d.Minutes:00}"; }
+        }
+
+        [Ignore]
+        public string RangeText => $"{Start:HH:mm}–{End:HH:mm}";
+    }
+
     [Table("VitaminSchedules")]
     public class VitaminSchedule
     {
@@ -79,6 +105,8 @@ namespace BabyTrackerMobile.Models
         /// <summary>Horário diário armazenado como ticks de TimeSpan.</summary>
         public long TimeOfDayTicks { get; set; }
         public bool IsActive { get; set; } = true;
+        /// <summary>true = vitamina da mãe; false = do bebê.</summary>
+        public bool IsMother { get; set; }
 
         [Ignore]
         public TimeSpan TimeOfDay
@@ -89,6 +117,9 @@ namespace BabyTrackerMobile.Models
 
         [Ignore]
         public string TimeDisplay => TimeOfDay.ToString(@"hh\:mm");
+
+        [Ignore]
+        public string OwnerLabel => IsMother ? "🤱 Mãe" : "👶 Bebê";
     }
 
     /// <summary>Registro de que a vitamina foi tomada em determinado dia.</summary>

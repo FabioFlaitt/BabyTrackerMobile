@@ -23,6 +23,7 @@ namespace BabyTrackerMobile.Data
                 await _database.CreateTableAsync<DiaperRecord>();
                 await _database.CreateTableAsync<WeightRecord>();
                 await _database.CreateTableAsync<MotherWaterRecord>();
+                await _database.CreateTableAsync<SleepRecord>();
                 await _database.CreateTableAsync<VitaminSchedule>();
                 await _database.CreateTableAsync<VitaminLog>();
             }
@@ -157,6 +158,38 @@ namespace BabyTrackerMobile.Data
             await db.DeleteAsync<MotherWaterRecord>(id);
         }
 
+        // ---- Sono ----
+        public static async Task AddSleepAsync(SleepRecord record)
+        {
+            var db = await GetDatabaseAsync();
+            await db.InsertAsync(record);
+        }
+
+        public static async Task UpdateSleepAsync(SleepRecord record)
+        {
+            var db = await GetDatabaseAsync();
+            await db.UpdateAsync(record);
+        }
+
+        public static async Task DeleteSleepAsync(int id)
+        {
+            var db = await GetDatabaseAsync();
+            await db.DeleteAsync<SleepRecord>(id);
+        }
+
+        /// <summary>Sonos que começaram no dia informado.</summary>
+        public static async Task<List<SleepRecord>> GetSleepsForDateAsync(int babyId, DateTime date)
+        {
+            var db = await GetDatabaseAsync();
+            var start = date.Date;
+            var end = date.Date.AddDays(1);
+            return await db.Table<SleepRecord>()
+                .Where(s => s.BabyId == babyId && s.Start >= start && s.Start < end)
+                .OrderByDescending(s => s.Start)
+                .ToListAsync();
+        }
+
+        // ---- Vitaminas ----
         public static async Task<List<VitaminSchedule>> GetVitaminsAsync(int babyId)
         {
             var db = await GetDatabaseAsync();
@@ -189,8 +222,13 @@ namespace BabyTrackerMobile.Data
         public static async Task<HashSet<int>> GetTakenVitaminIdsAsync(DateTime date)
         {
             var db = await GetDatabaseAsync();
-            var day = date.Date;
-            var logs = await db.Table<VitaminLog>().Where(l => l.Date == day).ToListAsync();
+            // Intervalo em vez de igualdade exata de DateTime: no sqlite-net o
+            // "== day" não casa de forma confiável, por isso o marcado sumia do resumo.
+            var start = date.Date;
+            var end = start.AddDays(1);
+            var logs = await db.Table<VitaminLog>()
+                .Where(l => l.Date >= start && l.Date < end)
+                .ToListAsync();
             var set = new HashSet<int>();
             foreach (var l in logs) set.Add(l.VitaminId);
             return set;
@@ -199,15 +237,16 @@ namespace BabyTrackerMobile.Data
         public static async Task SetVitaminTakenAsync(int vitaminId, DateTime date, bool taken)
         {
             var db = await GetDatabaseAsync();
-            var day = date.Date;
+            var start = date.Date;
+            var end = start.AddDays(1);
             var existing = await db.Table<VitaminLog>()
-                .Where(l => l.VitaminId == vitaminId && l.Date == day)
+                .Where(l => l.VitaminId == vitaminId && l.Date >= start && l.Date < end)
                 .ToListAsync();
 
             if (taken)
             {
                 if (existing.Count == 0)
-                    await db.InsertAsync(new VitaminLog { VitaminId = vitaminId, Date = day, TakenAt = DateTime.Now });
+                    await db.InsertAsync(new VitaminLog { VitaminId = vitaminId, Date = start, TakenAt = DateTime.Now });
             }
             else
             {

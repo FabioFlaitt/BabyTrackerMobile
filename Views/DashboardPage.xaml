@@ -66,6 +66,36 @@
                     </Frame>
                 </Grid>
 
+                <!-- Sono -->
+                <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False">
+                    <StackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="😴 Sono de hoje" FontSize="16" FontAttributes="Bold" TextColor="#212121" VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="{Binding SleepTotalText}" FontSize="14" TextColor="#5E35B1" FontAttributes="Bold" VerticalOptions="Center" />
+                        </Grid>
+                        <Label Text="Recém-nascido: 14–17h/dia (NSF/AAP)" TextColor="#757575" FontSize="12" />
+                        <Button Text="➕ Registrar sono 😴" Command="{Binding GoToSleepCommand}" BackgroundColor="#5E35B1" TextColor="White" CornerRadius="8" />
+                        <StackLayout BindableLayout.ItemsSource="{Binding TodaySleeps}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:SleepRecord">
+                                    <SwipeView>
+                                        <SwipeView.RightItems>
+                                            <SwipeItems>
+                                                <SwipeItem Text="Editar" BackgroundColor="#1976D2" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=EditSleepCommand}" CommandParameter="{Binding .}" />
+                                                <SwipeItem Text="Deletar" BackgroundColor="#C62828" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=DeleteSleepCommand}" CommandParameter="{Binding .}" />
+                                            </SwipeItems>
+                                        </SwipeView.RightItems>
+                                        <Grid ColumnDefinitions="*,Auto" Padding="5,4">
+                                            <Label Grid.Column="0" Text="{Binding RangeText}" TextColor="#212121" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Text="{Binding DurationText}" FontAttributes="Bold" TextColor="#5E35B1" VerticalOptions="Center" />
+                                        </Grid>
+                                    </SwipeView>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </StackLayout>
+                    </StackLayout>
+                </Frame>
+
                 <!-- Água da Mamãe -->
                 <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False">
                     <StackLayout Spacing="10">
@@ -98,11 +128,11 @@
                     </StackLayout>
                 </Frame>
 
-                <!-- Vitamina do dia -->
+                <!-- Vitamina do bebê -->
                 <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False">
                     <StackLayout Spacing="8">
-                        <Label Text="💊 Vitamina de hoje" FontSize="16" FontAttributes="Bold" TextColor="#212121" />
-                        <Label Text="Nenhuma vitamina cadastrada. Cadastre em Config." TextColor="#757575" FontSize="12" FontAttributes="Italic" IsVisible="{Binding HasVitamins, Converter={StaticResource InvertBool}}" />
+                        <Label Text="💊 Vitamina do bebê" FontSize="16" FontAttributes="Bold" TextColor="#212121" />
+                        <Label Text="Nenhuma vitamina do bebê cadastrada. Cadastre em Config." TextColor="#757575" FontSize="12" FontAttributes="Italic" IsVisible="{Binding HasVitamins, Converter={StaticResource InvertBool}}" />
                         <StackLayout BindableLayout.ItemsSource="{Binding TodayVitamins}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="vm:VitaminCheckItem">
@@ -110,6 +140,24 @@
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsTaken}" Color="#7B1FA2" VerticalOptions="Center" />
                                         <Label Grid.Column="1" Text="{Binding Name}" TextColor="#212121" FontSize="15" VerticalOptions="Center" />
                                         <Label Grid.Column="2" Text="{Binding TimeDisplay}" TextColor="#7B1FA2" FontAttributes="Bold" VerticalOptions="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </StackLayout>
+                    </StackLayout>
+                </Frame>
+
+                <!-- Vitamina da mãe -->
+                <Frame BackgroundColor="White" CornerRadius="12" Padding="15" HasShadow="False" IsVisible="{Binding HasMotherVitamins}">
+                    <StackLayout Spacing="8">
+                        <Label Text="🤱 Vitamina da mãe" FontSize="16" FontAttributes="Bold" TextColor="#212121" />
+                        <StackLayout BindableLayout.ItemsSource="{Binding TodayMotherVitamins}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:VitaminCheckItem">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="0,4">
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsTaken}" Color="#D81B60" VerticalOptions="Center" />
+                                        <Label Grid.Column="1" Text="{Binding Name}" TextColor="#212121" FontSize="15" VerticalOptions="Center" />
+                                        <Label Grid.Column="2" Text="{Binding TimeDisplay}" TextColor="#D81B60" FontAttributes="Bold" VerticalOptions="Center" />
                                     </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>

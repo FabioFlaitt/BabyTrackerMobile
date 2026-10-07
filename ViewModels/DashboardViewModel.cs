@@ -49,6 +49,19 @@ namespace BabyTrackerMobile.ViewModels
         private bool hasVitamins;
 
         [ObservableProperty]
+        private ObservableCollection<VitaminCheckItem> todayMotherVitamins = new();
+
+        [ObservableProperty]
+        private bool hasMotherVitamins;
+
+        [ObservableProperty]
+        private ObservableCollection<SleepRecord> todaySleeps = new();
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SleepTotalText))]
+        private int totalSleepMinutes;
+
+        [ObservableProperty]
         private Baby? currentBaby;
 
         [ObservableProperty]
@@ -76,6 +89,8 @@ namespace BabyTrackerMobile.ViewModels
         public string BabyDisplayName => CurrentBaby?.Name ?? "Nenhum bebê cadastrado";
 
         public string MotherWaterText => $"{TotalMotherWaterMl} ml hoje";
+
+        public string SleepTotalText => $"{TotalSleepMinutes / 60}h{TotalSleepMinutes % 60:00} hoje";
 
         partial void OnTotalMotherWaterMlChanged(int value)
         {
@@ -115,20 +130,34 @@ namespace BabyTrackerMobile.ViewModels
             var feedings = await DatabaseService.GetFeedingsForDateAsync(CurrentBaby.Id, date);
             var diapers = await DatabaseService.GetDiapersForDateAsync(CurrentBaby.Id, date);
             var waters = await DatabaseService.GetMotherWatersForDateAsync(CurrentBaby.Id, date);
+            var sleeps = await DatabaseService.GetSleepsForDateAsync(CurrentBaby.Id, date);
             TodayFeedings = new ObservableCollection<FeedingRecord>(feedings);
             TodayDiapers = new ObservableCollection<DiaperRecord>(diapers);
             TodayMotherWaters = new ObservableCollection<MotherWaterRecord>(waters);
+            TodaySleeps = new ObservableCollection<SleepRecord>(sleeps);
+
             var total = 0;
             foreach (var w in waters) total += w.VolumeMl;
             TotalMotherWaterMl = total;
 
+            var sleepMin = 0;
+            foreach (var s in sleeps) sleepMin += (int)s.Duration.TotalMinutes;
+            TotalSleepMinutes = sleepMin;
+
             var vitamins = await DatabaseService.GetVitaminsAsync(CurrentBaby.Id);
             var taken = await DatabaseService.GetTakenVitaminIdsAsync(date);
-            var items = new ObservableCollection<VitaminCheckItem>();
+            var babyItems = new ObservableCollection<VitaminCheckItem>();
+            var motherItems = new ObservableCollection<VitaminCheckItem>();
             foreach (var v in vitamins)
-                if (v.IsActive) items.Add(new VitaminCheckItem(v, date, taken.Contains(v.Id)));
-            TodayVitamins = items;
-            HasVitamins = items.Count > 0;
+            {
+                if (!v.IsActive) continue;
+                var item = new VitaminCheckItem(v, date, taken.Contains(v.Id));
+                if (v.IsMother) motherItems.Add(item); else babyItems.Add(item);
+            }
+            TodayVitamins = babyItems;
+            HasVitamins = babyItems.Count > 0;
+            TodayMotherVitamins = motherItems;
+            HasMotherVitamins = motherItems.Count > 0;
 
             TodayAnalysis = MedicalGuidelinesService.AnalyzeDay(CurrentBaby, date, feedings, diapers);
             OnPropertyChanged(nameof(DayOfLifeText));
@@ -184,6 +213,10 @@ namespace BabyTrackerMobile.ViewModels
         }
 
         [RelayCommand]
+        public async Task GoToSleepAsync()
+            => await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//sleep");
+
+        [RelayCommand]
         public async Task ExportDayAsync()
         {
             try
@@ -223,6 +256,15 @@ namespace BabyTrackerMobile.ViewModels
         }
 
         [RelayCommand]
+        public async Task EditSleepAsync(SleepRecord record)
+        {
+            var vm = Resolve<SleepViewModel>();
+            if (vm == null) return;
+            vm.BeginEdit(record);
+            await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//sleep");
+        }
+
+        [RelayCommand]
         public async Task DeleteFeedingAsync(FeedingRecord record)
         {
             await DatabaseService.DeleteFeedingAsync(record.Id);
@@ -233,6 +275,13 @@ namespace BabyTrackerMobile.ViewModels
         public async Task DeleteDiaperAsync(DiaperRecord record)
         {
             await DatabaseService.DeleteDiaperAsync(record.Id);
+            await RefreshAsync();
+        }
+
+        [RelayCommand]
+        public async Task DeleteSleepAsync(SleepRecord record)
+        {
+            await DatabaseService.DeleteSleepAsync(record.Id);
             await RefreshAsync();
         }
 
