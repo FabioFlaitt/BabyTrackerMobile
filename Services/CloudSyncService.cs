@@ -238,7 +238,7 @@ namespace BabyTrackerMobile.Services
 
         private static string SleepJson(SleepRecord r) =>
             "{" + $"\"cloudId\":{S(r.CloudId)},\"updatedAt\":{r.UpdatedAt},\"isDeleted\":{B(r.IsDeleted)}," +
-            $"\"startTicks\":{r.Start.Ticks},\"endTicks\":{r.End.Ticks}" + "}";
+            $"\"startTicks\":{r.Start.Ticks},\"endTicks\":{r.End.Ticks},\"isOngoing\":{B(r.IsOngoing)}" + "}";
 
         private static SleepRecord? ParseSleep(JsonElement e)
         {
@@ -249,7 +249,8 @@ namespace BabyTrackerMobile.Services
                 UpdatedAt = GetLong(e, "updatedAt"),
                 IsDeleted = GetBool(e, "isDeleted"),
                 Start = new DateTime(GetLong(e, "startTicks")),
-                End = new DateTime(GetLong(e, "endTicks"))
+                End = new DateTime(GetLong(e, "endTicks")),
+                IsOngoing = GetBool(e, "isOngoing")
             };
         }
 

@@ -105,13 +105,22 @@ namespace BabyTrackerMobile.Models
         public int BabyId { get; set; }
         public DateTime Start { get; set; } = DateTime.Now;
         public DateTime End { get; set; } = DateTime.Now;
+        /// <summary>true = sono em andamento (ainda não acordou).</summary>
+        public bool IsOngoing { get; set; }
 
         public string CloudId { get; set; } = "";
         public long UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
 
         [Ignore]
-        public TimeSpan Duration => End > Start ? End - Start : TimeSpan.Zero;
+        public TimeSpan Duration
+        {
+            get
+            {
+                if (IsOngoing) { var d = DateTime.Now - Start; return d > TimeSpan.Zero ? d : TimeSpan.Zero; }
+                return End > Start ? End - Start : TimeSpan.Zero;
+            }
+        }
 
         [Ignore]
         public string DurationText
@@ -120,7 +129,7 @@ namespace BabyTrackerMobile.Models
         }
 
         [Ignore]
-        public string RangeText => $"{Start:HH:mm}–{End:HH:mm}";
+        public string RangeText => IsOngoing ? $"desde {Start:HH:mm}" : $"{Start:HH:mm}–{End:HH:mm}";
     }
 
     [Table("VitaminSchedules")]

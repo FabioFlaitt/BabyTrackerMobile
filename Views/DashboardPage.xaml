@@ -74,7 +74,20 @@
                             <Label Grid.Column="1" Text="{Binding SleepTotalText}" FontSize="14" TextColor="#5E35B1" FontAttributes="Bold" VerticalOptions="Center" />
                         </Grid>
                         <Label Text="Recém-nascido: 14–17h/dia (NSF/AAP)" TextColor="#757575" FontSize="12" />
-                        <Button Text="➕ Registrar sono 😴" Command="{Binding GoToSleepCommand}" BackgroundColor="#5E35B1" TextColor="White" CornerRadius="8" />
+
+                        <!-- Sem sono em andamento: botão iniciar -->
+                        <Button Text="😴 Dormiu (iniciar sono)" Command="{Binding StartSleepCommand}" BackgroundColor="#5E35B1" TextColor="White" CornerRadius="8" IsVisible="{Binding NoOngoingSleep}" />
+
+                        <!-- Sono em andamento: aviso + botão acordou -->
+                        <StackLayout Spacing="8" IsVisible="{Binding HasOngoingSleep}">
+                            <Frame BackgroundColor="#EDE7F6" CornerRadius="8" Padding="10" HasShadow="False">
+                                <Label Text="{Binding OngoingSleepText}" TextColor="#4527A0" FontAttributes="Bold" HorizontalOptions="Center" />
+                            </Frame>
+                            <Button Text="⏰ Acordou (encerrar sono)" Command="{Binding StopSleepCommand}" BackgroundColor="#00897B" TextColor="White" CornerRadius="8" />
+                        </StackLayout>
+
+                        <Button Text="✏️ Lançar/editar sono manualmente" Command="{Binding GoToSleepCommand}" BackgroundColor="Transparent" TextColor="#5E35B1" FontSize="12" />
+
                         <StackLayout BindableLayout.ItemsSource="{Binding TodaySleeps}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="models:SleepRecord">

@@ -323,10 +323,54 @@ namespace BabyTrackerMobile.Data
             var db = await GetDatabaseAsync();
             var start = date.Date;
             var end = date.Date.AddDays(1);
+            // Apenas sonos já encerrados (o em andamento é mostrado à parte).
             return await db.Table<SleepRecord>()
-                .Where(s => s.BabyId == babyId && !s.IsDeleted && s.Start >= start && s.Start < end)
+                .Where(s => s.BabyId == babyId && !s.IsDeleted && !s.IsOngoing && s.Start >= start && s.Start < end)
                 .OrderByDescending(s => s.Start)
                 .ToListAsync();
+        }
+
+        /// <summary>O sono em andamento (ainda não acordou), independente do dia.</summary>
+        public static async Task<SleepRecord?> GetOngoingSleepAsync(int babyId)
+        {
+            var db = await GetDatabaseAsync();
+            return await db.Table<SleepRecord>()
+                .Where(s => s.BabyId == babyId && !s.IsDeleted && s.IsOngoing)
+                .OrderByDescending(s => s.Start)
+                .FirstOrDefaultAsync();
+        }
+
+        /// <summary>Inicia um sono (botão "dormiu"). Se já houver um em aberto, retorna ele.</summary>
+        public static async Task<SleepRecord> StartSleepAsync(int babyId)
+        {
+            var open = await GetOngoingSleepAsync(babyId);
+            if (open != null) return open;
+
+            var db = await GetDatabaseAsync();
+            var record = new SleepRecord
+            {
+                BabyId = babyId,
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                IsOngoing = true
+            };
+            Stamp(record);
+            await db.InsertAsync(record);
+            if (Cloud != null) await Cloud.PushSleepAsync(record);
+            return record;
+        }
+
+        /// <summary>Encerra o sono em andamento (botão "acordou").</summary>
+        public static async Task StopSleepAsync(int babyId)
+        {
+            var open = await GetOngoingSleepAsync(babyId);
+            if (open == null) return;
+            var db = await GetDatabaseAsync();
+            open.End = DateTime.Now;
+            open.IsOngoing = false;
+            Stamp(open);
+            await db.UpdateAsync(open);
+            if (Cloud != null) await Cloud.PushSleepAsync(open);
         }
 
         public static async Task<List<SleepRecord>> GetAllSleepsAsync()

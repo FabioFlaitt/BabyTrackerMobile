@@ -62,6 +62,18 @@ namespace BabyTrackerMobile.ViewModels
         private int totalSleepMinutes;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasOngoingSleep))]
+        [NotifyPropertyChangedFor(nameof(NoOngoingSleep))]
+        [NotifyPropertyChangedFor(nameof(OngoingSleepText))]
+        private SleepRecord? ongoingSleep;
+
+        public bool HasOngoingSleep => OngoingSleep != null;
+        public bool NoOngoingSleep => OngoingSleep == null;
+        public string OngoingSleepText => OngoingSleep != null
+            ? $"😴 Dormindo {OngoingSleep.RangeText} ({OngoingSleep.DurationText})"
+            : "";
+
+        [ObservableProperty]
         private Baby? currentBaby;
 
         [ObservableProperty]
@@ -146,6 +158,7 @@ namespace BabyTrackerMobile.ViewModels
             var diapers = await DatabaseService.GetDiapersForDateAsync(CurrentBaby.Id, date);
             var waters = await DatabaseService.GetMotherWatersForDateAsync(CurrentBaby.Id, date);
             var sleeps = await DatabaseService.GetSleepsForDateAsync(CurrentBaby.Id, date);
+            OngoingSleep = await DatabaseService.GetOngoingSleepAsync(CurrentBaby.Id);
             TodayFeedings = new ObservableCollection<FeedingRecord>(feedings);
             TodayDiapers = new ObservableCollection<DiaperRecord>(diapers);
             TodayMotherWaters = new ObservableCollection<MotherWaterRecord>(waters);
@@ -234,6 +247,22 @@ namespace BabyTrackerMobile.ViewModels
         [RelayCommand]
         public async Task GoToSleepAsync()
             => await Microsoft.Maui.Controls.Shell.Current.GoToAsync("//sleep");
+
+        [RelayCommand]
+        public async Task StartSleepAsync()
+        {
+            CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+            await DatabaseService.StartSleepAsync(CurrentBaby.Id);
+            await RefreshAsync();
+        }
+
+        [RelayCommand]
+        public async Task StopSleepAsync()
+        {
+            CurrentBaby ??= await DatabaseService.GetOrCreateBabyAsync();
+            await DatabaseService.StopSleepAsync(CurrentBaby.Id);
+            await RefreshAsync();
+        }
 
         [RelayCommand]
         public async Task GoToMilestonesAsync()
