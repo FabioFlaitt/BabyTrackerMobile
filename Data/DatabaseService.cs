@@ -54,7 +54,24 @@ namespace BabyTrackerMobile.Data
             await BackfillAsync(await db.Table<SleepRecord>().ToListAsync(), db);
             await BackfillAsync(await db.Table<VitaminSchedule>().ToListAsync(), db);
             await BackfillAsync(await db.Table<Milestone>().ToListAsync(), db);
+
+            // VitaminLog precisa também do CloudId da vitamina.
+            var logs = await db.Table<VitaminLog>().ToListAsync();
+            foreach (var l in logs)
+            {
+                if (!string.IsNullOrEmpty(l.CloudId)) continue;
+                var vit = await db.FindAsync<VitaminSchedule>(l.VitaminId);
+                l.VitaminCloudId = vit?.CloudId ?? "";
+                l.CloudId = LogCloudId(l.VitaminCloudId, l.VitaminId, l.Date);
+                l.UpdatedAt = Now();
+                await db.UpdateAsync(l);
+            }
         }
+
+        private static string LogCloudId(string vitaminCloudId, int vitaminId, DateTime date)
+            => !string.IsNullOrEmpty(vitaminCloudId)
+                ? $"{vitaminCloudId}_{date:yyyyMMdd}"
+                : $"local{vitaminId}_{date:yyyyMMdd}";
 
         private static async Task BackfillAsync<T>(List<T> rows, SQLiteAsyncConnection db) where T : ISyncEntity
         {
@@ -478,14 +495,14 @@ namespace BabyTrackerMobile.Data
             else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
         }
 
-        // ---- "vitamina tomada hoje" (ainda local) ----
+        // ---- "vitamina tomada hoje" (sincronizado) ----
         public static async Task<HashSet<int>> GetTakenVitaminIdsAsync(DateTime date)
         {
             var db = await GetDatabaseAsync();
             var start = date.Date;
             var end = start.AddDays(1);
             var logs = await db.Table<VitaminLog>()
-                .Where(l => l.Date >= start && l.Date < end)
+                .Where(l => l.Date >= start && l.Date < end && !l.IsDeleted)
                 .ToListAsync();
             var set = new HashSet<int>();
             foreach (var l in logs) set.Add(l.VitaminId);
@@ -495,21 +512,42 @@ namespace BabyTrackerMobile.Data
         public static async Task SetVitaminTakenAsync(int vitaminId, DateTime date, bool taken)
         {
             var db = await GetDatabaseAsync();
-            var start = date.Date;
-            var end = start.AddDays(1);
-            var existing = await db.Table<VitaminLog>()
-                .Where(l => l.VitaminId == vitaminId && l.Date >= start && l.Date < end)
-                .ToListAsync();
+            var day = date.Date;
+            var vit = await db.FindAsync<VitaminSchedule>(vitaminId);
+            var vitCloud = vit?.CloudId ?? "";
+            var cloudId = LogCloudId(vitCloud, vitaminId, day);
 
-            if (taken)
+            var existing = await db.Table<VitaminLog>().Where(l => l.CloudId == cloudId).FirstOrDefaultAsync();
+            if (existing == null)
+                existing = new VitaminLog { Date = day, CloudId = cloudId };
+
+            existing.VitaminId = vitaminId;
+            existing.VitaminCloudId = vitCloud;
+            existing.TakenAt = DateTime.Now;
+            existing.IsDeleted = !taken;
+            existing.UpdatedAt = Now();
+
+            if (existing.Id > 0) await db.UpdateAsync(existing);
+            else await db.InsertAsync(existing);
+
+            if (Cloud != null) await Cloud.PushVitaminLogAsync(existing);
+        }
+
+        public static async Task<List<VitaminLog>> GetAllVitaminLogsAsync()
+            => await (await GetDatabaseAsync()).Table<VitaminLog>().ToListAsync();
+
+        public static async Task UpsertVitaminLogAsync(VitaminLog incoming)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            if (!string.IsNullOrEmpty(incoming.VitaminCloudId))
             {
-                if (existing.Count == 0)
-                    await db.InsertAsync(new VitaminLog { VitaminId = vitaminId, Date = start, TakenAt = DateTime.Now });
+                var vit = await db.Table<VitaminSchedule>().Where(v => v.CloudId == incoming.VitaminCloudId).FirstOrDefaultAsync();
+                if (vit != null) incoming.VitaminId = vit.Id;
             }
-            else
-            {
-                foreach (var l in existing) await db.DeleteAsync<VitaminLog>(l.Id);
-            }
+            var existing = await db.Table<VitaminLog>().Where(l => l.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
         }
     }
 }

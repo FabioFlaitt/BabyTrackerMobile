@@ -154,15 +154,21 @@ namespace BabyTrackerMobile.Models
         public string OwnerLabel => IsMother ? "🤱 Mãe" : "👶 Bebê";
     }
 
-    /// <summary>Registro de que a vitamina foi tomada em determinado dia (local).</summary>
+    /// <summary>Registro de que a vitamina foi tomada em determinado dia.</summary>
     [Table("VitaminLogs")]
-    public class VitaminLog
+    public class VitaminLog : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public int VitaminId { get; set; }
+        /// <summary>CloudId da vitamina (igual nos dois celulares).</summary>
+        public string VitaminCloudId { get; set; } = "";
         public DateTime Date { get; set; } = DateTime.Today;
         public DateTime TakenAt { get; set; } = DateTime.Now;
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     /// <summary>Conquista/marco do bebê (primeiro sorriso, engatinhar, andar...).</summary>

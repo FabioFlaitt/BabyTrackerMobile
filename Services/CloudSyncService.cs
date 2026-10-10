@@ -50,6 +50,7 @@ namespace BabyTrackerMobile.Services
         public Task PushSleepAsync(SleepRecord r) => PutAsync($"sleeps/{r.CloudId}", SleepJson(r));
         public Task PushVitaminAsync(VitaminSchedule r) => PutAsync($"vitamins/{r.CloudId}", VitaminJson(r));
         public Task PushMilestoneAsync(Milestone r) => PutAsync($"milestones/{r.CloudId}", MilestoneJson(r));
+        public Task PushVitaminLogAsync(VitaminLog r) => PutAsync($"vitaminlogs/{r.CloudId}", VitaminLogJson(r));
 
         /// <summary>Envia todos os dados locais (usado ao criar/entrar numa família).</summary>
         public async Task PushAllLocalAsync()
@@ -64,6 +65,7 @@ namespace BabyTrackerMobile.Services
                 foreach (var r in await DatabaseService.GetAllWatersAsync()) await PushWaterAsync(r);
                 foreach (var r in await DatabaseService.GetAllSleepsAsync()) await PushSleepAsync(r);
                 foreach (var r in await DatabaseService.GetAllVitaminsAsync()) await PushVitaminAsync(r);
+                foreach (var r in await DatabaseService.GetAllVitaminLogsAsync()) await PushVitaminLogAsync(r);
                 foreach (var r in await DatabaseService.GetAllMilestonesAsync()) await PushMilestoneAsync(r);
             }
             catch { }
@@ -104,6 +106,9 @@ namespace BabyTrackerMobile.Services
                     el => { var r = ParseSleep(el); return r != null ? DatabaseService.UpsertSleepAsync(r, localBabyId) : Task.CompletedTask; });
                 await PullTableAsync($"families/{fid}/vitamins.json?auth={token}",
                     el => { var r = ParseVitamin(el); return r != null ? DatabaseService.UpsertVitaminAsync(r, localBabyId) : Task.CompletedTask; });
+                // Logs depois das vitaminas, para mapear o VitaminCloudId ao id local.
+                await PullTableAsync($"families/{fid}/vitaminlogs.json?auth={token}",
+                    el => { var r = ParseVitaminLog(el); return r != null ? DatabaseService.UpsertVitaminLogAsync(r) : Task.CompletedTask; });
                 await PullTableAsync($"families/{fid}/milestones.json?auth={token}",
                     el => { var r = ParseMilestone(el); return r != null ? DatabaseService.UpsertMilestoneAsync(r, localBabyId) : Task.CompletedTask; });
             }
@@ -272,6 +277,24 @@ namespace BabyTrackerMobile.Services
             $"\"icon\":{S(r.Icon)},\"title\":{S(r.Title)}," +
             $"\"achievedTicks\":{(r.AchievedDate.HasValue ? r.AchievedDate.Value.Ticks.ToString() : "null")}," +
             $"\"notes\":{S(r.Notes)},\"sortOrder\":{r.SortOrder},\"isCustom\":{B(r.IsCustom)}" + "}";
+
+        private static string VitaminLogJson(VitaminLog r) =>
+            "{" + $"\"cloudId\":{S(r.CloudId)},\"updatedAt\":{r.UpdatedAt},\"isDeleted\":{B(r.IsDeleted)}," +
+            $"\"vitaminCloudId\":{S(r.VitaminCloudId)},\"dateTicks\":{r.Date.Ticks},\"takenTicks\":{r.TakenAt.Ticks}" + "}";
+
+        private static VitaminLog? ParseVitaminLog(JsonElement e)
+        {
+            if (e.ValueKind != JsonValueKind.Object) return null;
+            return new VitaminLog
+            {
+                CloudId = GetStr(e, "cloudId"),
+                UpdatedAt = GetLong(e, "updatedAt"),
+                IsDeleted = GetBool(e, "isDeleted"),
+                VitaminCloudId = GetStr(e, "vitaminCloudId"),
+                Date = new DateTime(GetLong(e, "dateTicks")),
+                TakenAt = new DateTime(GetLong(e, "takenTicks"))
+            };
+        }
 
         private static Milestone? ParseMilestone(JsonElement e)
         {
