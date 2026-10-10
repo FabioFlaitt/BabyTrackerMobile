@@ -8,13 +8,15 @@ public partial class ChatPage : ContentPage
 {
     private readonly ChatViewModel _vm;
     private readonly FirebaseAuthService _auth;
+    private readonly ChatNotificationService _notifier;
     private IDispatcherTimer? _timer;
 
-    public ChatPage(ChatViewModel vm, FirebaseAuthService auth)
+    public ChatPage(ChatViewModel vm, FirebaseAuthService auth, ChatNotificationService notifier)
     {
         InitializeComponent();
         BindingContext = _vm = vm;
         _auth = auth;
+        _notifier = notifier;
     }
 
     protected override async void OnAppearing()
@@ -33,6 +35,11 @@ public partial class ChatPage : ContentPage
         if (!_vm.HasNickname)
             await AskNicknameAsync();
 
+        // Estou vendo o chat: não notifica, zera o badge e marca tudo como visto.
+        ChatNotificationService.ChatOpen = true;
+        NotificationService.ClearBadge();
+        await _notifier.MarkSeenAsync();
+
         await _vm.RefreshAsync();
         ScrollToEnd();
 
@@ -44,10 +51,12 @@ public partial class ChatPage : ContentPage
         _timer.Start();
     }
 
-    protected override void OnDisappearing()
+    protected override async void OnDisappearing()
     {
         base.OnDisappearing();
         _timer?.Stop();
+        ChatNotificationService.ChatOpen = false;
+        await _notifier.MarkSeenAsync();
     }
 
     private async void OnTick(object? sender, EventArgs e)

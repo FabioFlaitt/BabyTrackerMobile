@@ -43,8 +43,9 @@
         </CollectionView>
 
         <!-- Campo de envio -->
-        <StackLayout Grid.Row="2" Spacing="4" Margin="0,8,0,0">
+        <StackLayout Grid.Row="2" Spacing="6" Margin="0,8,0,0">
             <Label Text="{Binding StatusText}" TextColor="#C62828" FontSize="12" IsVisible="{Binding StatusText, Converter={StaticResource HasText}}" />
+            <Button Text="🔔 Chamar atenção da família" Command="{Binding NudgeCommand}" BackgroundColor="#FB8C00" TextColor="White" CornerRadius="8" FontSize="13" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Entry Grid.Column="0" Text="{Binding Draft}" Placeholder="Escreva uma mensagem..." BackgroundColor="White" TextColor="#212121" PlaceholderColor="#9E9E9E" ReturnCommand="{Binding SendCommand}" />
                 <Button Grid.Column="1" Text="Enviar" Command="{Binding SendCommand}" BackgroundColor="#25D366" TextColor="White" CornerRadius="8" />

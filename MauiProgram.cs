@@ -28,6 +28,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<FamilyService>();
         builder.Services.AddSingleton<CloudSyncService>();
         builder.Services.AddSingleton<ChatService>();
+        builder.Services.AddSingleton<ChatNotificationService>();
 
         // ViewModels
         builder.Services.AddSingleton<DashboardViewModel>();

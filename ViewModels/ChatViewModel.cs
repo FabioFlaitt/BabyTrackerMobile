@@ -100,6 +100,21 @@ namespace BabyTrackerMobile.ViewModels
         }
 
         [RelayCommand]
+        private async Task NudgeAsync()
+        {
+            if (!HasNickname) { StatusText = "Escolha um nickname primeiro."; return; }
+            IsBusy = true;
+            try
+            {
+                var (ok, error) = await _chat.SendAsync(Nickname, $"🔔 {Nickname} está chamando a atenção!", isNudge: true);
+                if (!ok) { StatusText = error ?? "Erro ao enviar."; return; }
+                StatusText = "";
+                await RefreshAsync();
+            }
+            finally { IsBusy = false; }
+        }
+
+        [RelayCommand]
         private async Task SignOutAsync()
         {
             await _auth.SignOutAsync();

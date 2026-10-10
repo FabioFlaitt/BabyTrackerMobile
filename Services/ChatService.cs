@@ -15,6 +15,7 @@ namespace BabyTrackerMobile.Services
         public string Text { get; set; } = "";
         public long Ts { get; set; }
         public bool IsBot { get; set; }
+        public bool IsNudge { get; set; }
 
         public DateTime LocalTime => DateTimeOffset.FromUnixTimeMilliseconds(Ts).LocalDateTime;
         public string TimeText => LocalTime.ToString("HH:mm");
@@ -26,14 +27,14 @@ namespace BabyTrackerMobile.Services
     /// </summary>
     public class ChatService
     {
-        private static readonly HttpClient Http = new();
+        private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
         private readonly FirebaseAuthService _auth;
 
         public ChatService(FirebaseAuthService auth) => _auth = auth;
 
         private const string RoomPath = "chat/global/messages";
 
-        public async Task<(bool ok, string? error)> SendAsync(string nickname, string text, bool isBot = false)
+        public async Task<(bool ok, string? error)> SendAsync(string nickname, string text, bool isBot = false, bool isNudge = false)
         {
             if (!FirebaseConfig.IsConfigured) return (false, "Firebase não configurado.");
             var token = await _auth.GetValidTokenAsync();
@@ -47,7 +48,8 @@ namespace BabyTrackerMobile.Services
                     $"\"nickname\":{JsonSerializer.Serialize(nickname)}," +
                     $"\"text\":{JsonSerializer.Serialize(text)}," +
                     $"\"ts\":{ts}," +
-                    $"\"isBot\":{(isBot ? "true" : "false")}" +
+                    $"\"isBot\":{(isBot ? "true" : "false")}," +
+                    $"\"isNudge\":{(isNudge ? "true" : "false")}" +
                     "}";
                 var url = $"{FirebaseConfig.DatabaseUrl}/{RoomPath}.json?auth={token}";
                 using var resp = await Http.PostAsync(url, new StringContent(body, Encoding.UTF8, "application/json"));
@@ -64,7 +66,6 @@ namespace BabyTrackerMobile.Services
             }
         }
 
-        /// <summary>Busca as mensagens da sala, ordenadas por horário.</summary>
         public async Task<List<ChatMessage>> GetMessagesAsync()
         {
             var result = new List<ChatMessage>();
@@ -88,14 +89,14 @@ namespace BabyTrackerMobile.Services
                         Nickname = Str(e, "nickname"),
                         Text = Str(e, "text"),
                         Ts = e.TryGetProperty("ts", out var t) && t.TryGetInt64(out var ms) ? ms : 0,
-                        IsBot = e.TryGetProperty("isBot", out var b) && b.ValueKind == JsonValueKind.True
+                        IsBot = e.TryGetProperty("isBot", out var b) && b.ValueKind == JsonValueKind.True,
+                        IsNudge = e.TryGetProperty("isNudge", out var nd) && nd.ValueKind == JsonValueKind.True
                     });
                 }
                 result.Sort((a, b) => a.Ts.CompareTo(b.Ts));
-                // Mantém apenas as últimas 300 para a lista não crescer sem limite na tela.
                 if (result.Count > 300) result = result.GetRange(result.Count - 300, 300);
             }
-            catch { /* rede instável: devolve o que tiver */ }
+            catch { }
             return result;
         }
 
