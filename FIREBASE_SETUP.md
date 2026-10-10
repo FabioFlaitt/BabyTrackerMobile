@@ -1,36 +1,14 @@
-# Configuração do Firebase (login + chat)
+# Configuração do Firebase (login + chat + sincronização)
 
 O app usa o Firebase por **REST** (sem SDK nativo, sem `google-services.json`).
-Só é preciso preencher 3 chaves públicas em `Services/FirebaseConfig.cs`.
+As 3 chaves já estão em `Services/FirebaseConfig.cs` (projeto `babyantonio`).
 
-## 1. Criar o projeto
-1. Acesse https://console.firebase.google.com e crie um projeto (plano **Spark**, grátis, sem cartão).
+## O que precisa estar ativo no console
+1. **Authentication → Sign-in method → Email/Password → Enable.**
+2. **Realtime Database** criado.
 
-## 2. Ativar login por e-mail/senha
-1. **Build → Authentication → Get started**.
-2. Aba **Sign-in method → Email/Password → Enable → Save**.
-
-## 3. Criar o Realtime Database
-1. **Build → Realtime Database → Create Database**.
-2. Escolha a localização e comece em **test mode** (depois aplique as regras abaixo).
-3. Anote a URL no topo, algo como:
-   `https://SEU-PROJETO-default-rtdb.firebaseio.com`
-
-## 4. Pegar as chaves
-Em **⚙️ Project settings → General**:
-- **Web API Key** (ex.: `AIza...`)
-- **Project ID**
-
-## 5. Preencher no app
-Edite `Services/FirebaseConfig.cs`:
-```csharp
-public const string ApiKey      = "AIza...";                 // Web API Key
-public const string ProjectId   = "seu-projeto";             // Project ID
-public const string DatabaseUrl = "https://seu-projeto-default-rtdb.firebaseio.com";
-```
-
-## 6. Regras de segurança (Realtime Database → Rules)
-Só usuários logados leem/escrevem o chat:
+## Regras de segurança (Realtime Database → Rules)
+Cole **estas regras** (cobrem chat, usuários e a sincronização por família) e **Publish**:
 ```json
 {
   "rules": {
@@ -41,17 +19,34 @@ Só usuários logados leem/escrevem o chat:
           ".write": "auth != null"
         }
       }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "families": {
+      "$fid": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     }
   }
 }
 ```
-Publique as regras (**Publish**).
+Sem essas regras, o login funciona mas a **sincronização dos dados do bebê é bloqueada** (e o app não mostra erro — só não sincroniza).
 
-Pronto. Faça o build, instale, toque em **💬 Chat** no Painel, crie a conta e escolha o apelido.
+## Como usar a sincronização entre dois celulares
+1. Nos dois celulares: abra o app → **💬 Chat** → crie a conta de cada um (um e-mail para você, outro para sua esposa) e defina o apelido.
+2. No **seu** celular: **Config. → 👨‍👩‍👦 Família → "Criar família"**. Anote o código (ex.: `ABC123`).
+3. No celular **dela**: **Config. → 👨‍👩‍👦 Família → "Entrar com código"** → digite o código → **Entrar**.
+4. Pronto: mamadas, fraldas, sono, água, conquistas e vitaminas passam a aparecer nos dois. Puxe a tela do Painel para baixo para atualizar na hora.
+
+> Observação: o check de "vitamina tomada hoje" ainda é por celular (sincronizo depois, se quiser).
 
 ---
 ## Opcional: bot com IA de verdade
-O assistente atual responde por regras (grátis, offline). Para um bot que
-responde qualquer pergunta com IA, seria preciso uma **Cloud Function** (plano
-**Blaze**, com cartão) guardando a chave da IA no servidor — a chave nunca pode
-ficar no app. Peça ao desenvolvedor se quiser esse upgrade.
+O assistente do chat responde por regras (grátis, offline). Para um bot com IA,
+seria preciso uma **Cloud Function** (plano **Blaze**, com cartão) guardando a
+chave da IA no servidor.

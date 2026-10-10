@@ -5,12 +5,24 @@ using System.Threading.Tasks;
 using Microsoft.Maui.Storage;
 using SQLite;
 using BabyTrackerMobile.Models;
+using BabyTrackerMobile.Services;
 
 namespace BabyTrackerMobile.Data
 {
     public class DatabaseService
     {
         private static SQLiteAsyncConnection? _database;
+
+        /// <summary>Motor de sincronização online. Setado na inicialização do app.</summary>
+        public static CloudSyncService? Cloud;
+
+        private static long Now() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        private static void Stamp(ISyncEntity e)
+        {
+            if (string.IsNullOrEmpty(e.CloudId)) e.CloudId = Guid.NewGuid().ToString("N");
+            e.UpdatedAt = Now();
+        }
 
         private static async Task<SQLiteAsyncConnection> GetDatabaseAsync()
         {
@@ -31,10 +43,36 @@ namespace BabyTrackerMobile.Data
             return _database;
         }
 
+        /// <summary>Dá CloudId a registros antigos que ainda não têm (migração).</summary>
+        public static async Task BackfillCloudIdsAsync()
+        {
+            var db = await GetDatabaseAsync();
+            await BackfillAsync(await db.Table<Baby>().ToListAsync(), db);
+            await BackfillAsync(await db.Table<FeedingRecord>().ToListAsync(), db);
+            await BackfillAsync(await db.Table<DiaperRecord>().ToListAsync(), db);
+            await BackfillAsync(await db.Table<MotherWaterRecord>().ToListAsync(), db);
+            await BackfillAsync(await db.Table<SleepRecord>().ToListAsync(), db);
+            await BackfillAsync(await db.Table<VitaminSchedule>().ToListAsync(), db);
+            await BackfillAsync(await db.Table<Milestone>().ToListAsync(), db);
+        }
+
+        private static async Task BackfillAsync<T>(List<T> rows, SQLiteAsyncConnection db) where T : ISyncEntity
+        {
+            foreach (var r in rows)
+            {
+                if (string.IsNullOrEmpty(r.CloudId))
+                {
+                    Stamp(r);
+                    await db.UpdateAsync(r);
+                }
+            }
+        }
+
+        // ---------------- Baby ----------------
         public static async Task<Baby?> GetFirstBabyAsync()
         {
             var db = await GetDatabaseAsync();
-            return await db.Table<Baby>().FirstOrDefaultAsync();
+            return await db.Table<Baby>().Where(b => !b.IsDeleted).FirstOrDefaultAsync();
         }
 
         public static async Task<Baby> GetOrCreateBabyAsync()
@@ -49,6 +87,7 @@ namespace BabyTrackerMobile.Data
                 BirthWeightGrams = 3000,
                 FeedingType = FeedingType.Breast
             };
+            Stamp(baby);
             var db = await GetDatabaseAsync();
             await db.InsertAsync(baby);
             return baby;
@@ -57,16 +96,48 @@ namespace BabyTrackerMobile.Data
         public static async Task SaveBabyAsync(Baby baby)
         {
             var db = await GetDatabaseAsync();
+            Stamp(baby);
             if (baby.Id > 0)
                 await db.UpdateAsync(baby);
             else
                 await db.InsertAsync(baby);
+            if (Cloud != null) await Cloud.PushBabyAsync(baby);
         }
 
+        public static async Task UpsertBabyFromCloudAsync(Baby incoming)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            var local = await db.Table<Baby>().FirstOrDefaultAsync();
+            if (local == null) { incoming.Id = 0; await db.InsertAsync(incoming); return; }
+            if (incoming.UpdatedAt >= local.UpdatedAt) { incoming.Id = local.Id; await db.UpdateAsync(incoming); }
+        }
+
+        // ---------------- Feedings ----------------
         public static async Task AddFeedingAsync(FeedingRecord record)
         {
             var db = await GetDatabaseAsync();
+            Stamp(record);
             await db.InsertAsync(record);
+            if (Cloud != null) await Cloud.PushFeedingAsync(record);
+        }
+
+        public static async Task UpdateFeedingAsync(FeedingRecord record)
+        {
+            var db = await GetDatabaseAsync();
+            Stamp(record);
+            await db.UpdateAsync(record);
+            if (Cloud != null) await Cloud.PushFeedingAsync(record);
+        }
+
+        public static async Task DeleteFeedingAsync(int id)
+        {
+            var db = await GetDatabaseAsync();
+            var r = await db.FindAsync<FeedingRecord>(id);
+            if (r == null) return;
+            r.IsDeleted = true; Stamp(r);
+            await db.UpdateAsync(r);
+            if (Cloud != null) await Cloud.PushFeedingAsync(r);
         }
 
         public static async Task<List<FeedingRecord>> GetFeedingsForDateAsync(int babyId, DateTime date)
@@ -75,33 +146,49 @@ namespace BabyTrackerMobile.Data
             var start = date.Date;
             var end = date.Date.AddDays(1);
             return await db.Table<FeedingRecord>()
-                .Where(f => f.BabyId == babyId && f.StartTime >= start && f.StartTime < end)
+                .Where(f => f.BabyId == babyId && !f.IsDeleted && f.StartTime >= start && f.StartTime < end)
                 .OrderByDescending(f => f.StartTime)
                 .ToListAsync();
         }
 
-        public static async Task UpdateFeedingAsync(FeedingRecord record)
+        public static async Task<List<FeedingRecord>> GetAllFeedingsAsync()
+            => await (await GetDatabaseAsync()).Table<FeedingRecord>().ToListAsync();
+
+        public static async Task UpsertFeedingAsync(FeedingRecord incoming, int localBabyId)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            incoming.BabyId = localBabyId;
+            var existing = await db.Table<FeedingRecord>().Where(x => x.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
+        }
+
+        // ---------------- Diapers ----------------
+        public static async Task AddDiaperAsync(DiaperRecord record)
         {
             var db = await GetDatabaseAsync();
-            await db.UpdateAsync(record);
+            Stamp(record);
+            await db.InsertAsync(record);
+            if (Cloud != null) await Cloud.PushDiaperAsync(record);
         }
 
         public static async Task UpdateDiaperAsync(DiaperRecord record)
         {
             var db = await GetDatabaseAsync();
+            Stamp(record);
             await db.UpdateAsync(record);
+            if (Cloud != null) await Cloud.PushDiaperAsync(record);
         }
 
-        public static async Task DeleteFeedingAsync(int id)
+        public static async Task DeleteDiaperAsync(int id)
         {
             var db = await GetDatabaseAsync();
-            await db.DeleteAsync<FeedingRecord>(id);
-        }
-
-        public static async Task AddDiaperAsync(DiaperRecord record)
-        {
-            var db = await GetDatabaseAsync();
-            await db.InsertAsync(record);
+            var r = await db.FindAsync<DiaperRecord>(id);
+            if (r == null) return;
+            r.IsDeleted = true; Stamp(r);
+            await db.UpdateAsync(r);
+            if (Cloud != null) await Cloud.PushDiaperAsync(r);
         }
 
         public static async Task<List<DiaperRecord>> GetDiapersForDateAsync(int babyId, DateTime date)
@@ -110,17 +197,25 @@ namespace BabyTrackerMobile.Data
             var start = date.Date;
             var end = date.Date.AddDays(1);
             return await db.Table<DiaperRecord>()
-                .Where(d => d.BabyId == babyId && d.Time >= start && d.Time < end)
+                .Where(d => d.BabyId == babyId && !d.IsDeleted && d.Time >= start && d.Time < end)
                 .OrderByDescending(d => d.Time)
                 .ToListAsync();
         }
 
-        public static async Task DeleteDiaperAsync(int id)
+        public static async Task<List<DiaperRecord>> GetAllDiapersAsync()
+            => await (await GetDatabaseAsync()).Table<DiaperRecord>().ToListAsync();
+
+        public static async Task UpsertDiaperAsync(DiaperRecord incoming, int localBabyId)
         {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
             var db = await GetDatabaseAsync();
-            await db.DeleteAsync<DiaperRecord>(id);
+            incoming.BabyId = localBabyId;
+            var existing = await db.Table<DiaperRecord>().Where(x => x.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
         }
 
+        // ---------------- Weight (local) ----------------
         public static async Task AddWeightAsync(WeightRecord record)
         {
             var db = await GetDatabaseAsync();
@@ -136,10 +231,13 @@ namespace BabyTrackerMobile.Data
                 .ToListAsync();
         }
 
+        // ---------------- Mother water ----------------
         public static async Task AddMotherWaterAsync(MotherWaterRecord record)
         {
             var db = await GetDatabaseAsync();
+            Stamp(record);
             await db.InsertAsync(record);
+            if (Cloud != null) await Cloud.PushWaterAsync(record);
         }
 
         public static async Task<List<MotherWaterRecord>> GetMotherWatersForDateAsync(int babyId, DateTime date)
@@ -148,7 +246,7 @@ namespace BabyTrackerMobile.Data
             var start = date.Date;
             var end = date.Date.AddDays(1);
             return await db.Table<MotherWaterRecord>()
-                .Where(w => w.BabyId == babyId && w.Time >= start && w.Time < end)
+                .Where(w => w.BabyId == babyId && !w.IsDeleted && w.Time >= start && w.Time < end)
                 .OrderByDescending(w => w.Time)
                 .ToListAsync();
         }
@@ -156,41 +254,78 @@ namespace BabyTrackerMobile.Data
         public static async Task DeleteMotherWaterAsync(int id)
         {
             var db = await GetDatabaseAsync();
-            await db.DeleteAsync<MotherWaterRecord>(id);
+            var r = await db.FindAsync<MotherWaterRecord>(id);
+            if (r == null) return;
+            r.IsDeleted = true; Stamp(r);
+            await db.UpdateAsync(r);
+            if (Cloud != null) await Cloud.PushWaterAsync(r);
         }
 
-        // ---- Sono ----
+        public static async Task<List<MotherWaterRecord>> GetAllWatersAsync()
+            => await (await GetDatabaseAsync()).Table<MotherWaterRecord>().ToListAsync();
+
+        public static async Task UpsertWaterAsync(MotherWaterRecord incoming, int localBabyId)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            incoming.BabyId = localBabyId;
+            var existing = await db.Table<MotherWaterRecord>().Where(x => x.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
+        }
+
+        // ---------------- Sono ----------------
         public static async Task AddSleepAsync(SleepRecord record)
         {
             var db = await GetDatabaseAsync();
+            Stamp(record);
             await db.InsertAsync(record);
+            if (Cloud != null) await Cloud.PushSleepAsync(record);
         }
 
         public static async Task UpdateSleepAsync(SleepRecord record)
         {
             var db = await GetDatabaseAsync();
+            Stamp(record);
             await db.UpdateAsync(record);
+            if (Cloud != null) await Cloud.PushSleepAsync(record);
         }
 
         public static async Task DeleteSleepAsync(int id)
         {
             var db = await GetDatabaseAsync();
-            await db.DeleteAsync<SleepRecord>(id);
+            var r = await db.FindAsync<SleepRecord>(id);
+            if (r == null) return;
+            r.IsDeleted = true; Stamp(r);
+            await db.UpdateAsync(r);
+            if (Cloud != null) await Cloud.PushSleepAsync(r);
         }
 
-        /// <summary>Sonos que começaram no dia informado.</summary>
         public static async Task<List<SleepRecord>> GetSleepsForDateAsync(int babyId, DateTime date)
         {
             var db = await GetDatabaseAsync();
             var start = date.Date;
             var end = date.Date.AddDays(1);
             return await db.Table<SleepRecord>()
-                .Where(s => s.BabyId == babyId && s.Start >= start && s.Start < end)
+                .Where(s => s.BabyId == babyId && !s.IsDeleted && s.Start >= start && s.Start < end)
                 .OrderByDescending(s => s.Start)
                 .ToListAsync();
         }
 
-        // ---- Conquistas (marcos) ----
+        public static async Task<List<SleepRecord>> GetAllSleepsAsync()
+            => await (await GetDatabaseAsync()).Table<SleepRecord>().ToListAsync();
+
+        public static async Task UpsertSleepAsync(SleepRecord incoming, int localBabyId)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            incoming.BabyId = localBabyId;
+            var existing = await db.Table<SleepRecord>().Where(x => x.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
+        }
+
+        // ---------------- Conquistas ----------------
         private static readonly (string Icon, string Title)[] DefaultMilestones =
         {
             ("😊", "Primeiro sorriso"),
@@ -212,14 +347,21 @@ namespace BabyTrackerMobile.Data
             var order = 0;
             foreach (var (icon, title) in DefaultMilestones)
             {
-                await db.InsertAsync(new Milestone
+                // CloudId determinístico para os marcos padrão, para os dois celulares
+                // não duplicarem ao semear a mesma lista.
+                var m = new Milestone
                 {
                     BabyId = babyId,
                     Icon = icon,
                     Title = title,
-                    SortOrder = order++,
-                    IsCustom = false
-                });
+                    SortOrder = order,
+                    IsCustom = false,
+                    CloudId = $"seed{order}",
+                    UpdatedAt = Now()
+                };
+                await db.InsertAsync(m);
+                if (Cloud != null) await Cloud.PushMilestoneAsync(m);
+                order++;
             }
         }
 
@@ -227,7 +369,7 @@ namespace BabyTrackerMobile.Data
         {
             var db = await GetDatabaseAsync();
             return await db.Table<Milestone>()
-                .Where(m => m.BabyId == babyId)
+                .Where(m => m.BabyId == babyId && !m.IsDeleted)
                 .OrderBy(m => m.SortOrder)
                 .ToListAsync();
         }
@@ -238,45 +380,64 @@ namespace BabyTrackerMobile.Data
             var start = date.Date;
             var end = start.AddDays(1);
             return await db.Table<Milestone>()
-                .Where(m => m.BabyId == babyId && m.AchievedDate >= start && m.AchievedDate < end)
+                .Where(m => m.BabyId == babyId && !m.IsDeleted && m.AchievedDate >= start && m.AchievedDate < end)
                 .ToListAsync();
         }
 
         public static async Task SaveMilestoneAsync(Milestone milestone)
         {
             var db = await GetDatabaseAsync();
+            Stamp(milestone);
             if (milestone.Id > 0)
                 await db.UpdateAsync(milestone);
             else
                 await db.InsertAsync(milestone);
+            if (Cloud != null) await Cloud.PushMilestoneAsync(milestone);
         }
 
         public static async Task DeleteMilestoneAsync(int id)
         {
             var db = await GetDatabaseAsync();
-            await db.DeleteAsync<Milestone>(id);
+            var r = await db.FindAsync<Milestone>(id);
+            if (r == null) return;
+            r.IsDeleted = true; Stamp(r);
+            await db.UpdateAsync(r);
+            if (Cloud != null) await Cloud.PushMilestoneAsync(r);
         }
 
         public static async Task<int> CountAchievedMilestonesAsync(int babyId)
         {
             var db = await GetDatabaseAsync();
             return await db.Table<Milestone>()
-                .Where(m => m.BabyId == babyId && m.AchievedDate != null)
+                .Where(m => m.BabyId == babyId && !m.IsDeleted && m.AchievedDate != null)
                 .CountAsync();
         }
 
         public static async Task<int> CountMilestonesAsync(int babyId)
         {
             var db = await GetDatabaseAsync();
-            return await db.Table<Milestone>().Where(m => m.BabyId == babyId).CountAsync();
+            return await db.Table<Milestone>().Where(m => m.BabyId == babyId && !m.IsDeleted).CountAsync();
         }
 
-        // ---- Vitaminas ----
+        public static async Task<List<Milestone>> GetAllMilestonesAsync()
+            => await (await GetDatabaseAsync()).Table<Milestone>().ToListAsync();
+
+        public static async Task UpsertMilestoneAsync(Milestone incoming, int localBabyId)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            incoming.BabyId = localBabyId;
+            var existing = await db.Table<Milestone>().Where(x => x.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
+        }
+
+        // ---------------- Vitaminas ----------------
         public static async Task<List<VitaminSchedule>> GetVitaminsAsync(int babyId)
         {
             var db = await GetDatabaseAsync();
             return await db.Table<VitaminSchedule>()
-                .Where(v => v.BabyId == babyId)
+                .Where(v => v.BabyId == babyId && !v.IsDeleted)
                 .OrderBy(v => v.TimeOfDayTicks)
                 .ToListAsync();
         }
@@ -284,28 +445,43 @@ namespace BabyTrackerMobile.Data
         public static async Task<int> SaveVitaminAsync(VitaminSchedule vitamin)
         {
             var db = await GetDatabaseAsync();
+            Stamp(vitamin);
             if (vitamin.Id > 0)
-            {
                 await db.UpdateAsync(vitamin);
-                return vitamin.Id;
-            }
-            await db.InsertAsync(vitamin);
+            else
+                await db.InsertAsync(vitamin);
+            if (Cloud != null) await Cloud.PushVitaminAsync(vitamin);
             return vitamin.Id;
         }
 
         public static async Task DeleteVitaminAsync(int id)
         {
             var db = await GetDatabaseAsync();
-            await db.DeleteAsync<VitaminSchedule>(id);
+            var r = await db.FindAsync<VitaminSchedule>(id);
+            if (r == null) return;
+            r.IsDeleted = true; Stamp(r);
+            await db.UpdateAsync(r);
             await db.ExecuteAsync("DELETE FROM VitaminLogs WHERE VitaminId = ?", id);
+            if (Cloud != null) await Cloud.PushVitaminAsync(r);
         }
 
-        /// <summary>Ids das vitaminas já marcadas como tomadas no dia.</summary>
+        public static async Task<List<VitaminSchedule>> GetAllVitaminsAsync()
+            => await (await GetDatabaseAsync()).Table<VitaminSchedule>().ToListAsync();
+
+        public static async Task UpsertVitaminAsync(VitaminSchedule incoming, int localBabyId)
+        {
+            if (string.IsNullOrEmpty(incoming.CloudId)) return;
+            var db = await GetDatabaseAsync();
+            incoming.BabyId = localBabyId;
+            var existing = await db.Table<VitaminSchedule>().Where(x => x.CloudId == incoming.CloudId).FirstOrDefaultAsync();
+            if (existing == null) { incoming.Id = 0; await db.InsertAsync(incoming); }
+            else if (incoming.UpdatedAt >= existing.UpdatedAt) { incoming.Id = existing.Id; await db.UpdateAsync(incoming); }
+        }
+
+        // ---- "vitamina tomada hoje" (ainda local) ----
         public static async Task<HashSet<int>> GetTakenVitaminIdsAsync(DateTime date)
         {
             var db = await GetDatabaseAsync();
-            // Intervalo em vez de igualdade exata de DateTime: no sqlite-net o
-            // "== day" não casa de forma confiável, por isso o marcado sumia do resumo.
             var start = date.Date;
             var end = start.AddDays(1);
             var logs = await db.Table<VitaminLog>()

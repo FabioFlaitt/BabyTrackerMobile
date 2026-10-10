@@ -11,8 +11,16 @@ namespace BabyTrackerMobile.Models
     public enum StoolConsistency { Liquid, Seedy, Soft, Hard }
     public enum HealthStatus { Normal, Attention, Alert }
 
+    /// <summary>Campos comuns usados pela sincronização online (Firebase).</summary>
+    public interface ISyncEntity
+    {
+        string CloudId { get; set; }
+        long UpdatedAt { get; set; }
+        bool IsDeleted { get; set; }
+    }
+
     [Table("Babies")]
-    public class Baby
+    public class Baby : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
@@ -20,10 +28,14 @@ namespace BabyTrackerMobile.Models
         public DateTime BirthDate { get; set; } = DateTime.Today;
         public double BirthWeightGrams { get; set; } = 3000;
         public FeedingType FeedingType { get; set; } = FeedingType.Breast;
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     [Table("Feedings")]
-    public class FeedingRecord
+    public class FeedingRecord : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
@@ -34,12 +46,16 @@ namespace BabyTrackerMobile.Models
         public double? BottleAmountMl { get; set; }
         public string Notes { get; set; } = string.Empty;
 
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
+
         [Ignore]
         public bool IsBottle => Side == BreastSide.Bottle;
     }
 
     [Table("Diapers")]
-    public class DiaperRecord
+    public class DiaperRecord : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
@@ -50,6 +66,10 @@ namespace BabyTrackerMobile.Models
         public StoolColor? Color { get; set; }
         public StoolConsistency? Consistency { get; set; }
         public string Notes { get; set; } = string.Empty;
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     [Table("Weights")]
@@ -63,24 +83,32 @@ namespace BabyTrackerMobile.Models
     }
 
     [Table("MotherWaters")]
-    public class MotherWaterRecord
+    public class MotherWaterRecord : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public int BabyId { get; set; }
         public DateTime Time { get; set; } = DateTime.Now;
         public int VolumeMl { get; set; }
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     /// <summary>Período de sono do bebê.</summary>
     [Table("Sleeps")]
-    public class SleepRecord
+    public class SleepRecord : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public int BabyId { get; set; }
         public DateTime Start { get; set; } = DateTime.Now;
         public DateTime End { get; set; } = DateTime.Now;
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
 
         [Ignore]
         public TimeSpan Duration => End > Start ? End - Start : TimeSpan.Zero;
@@ -96,7 +124,7 @@ namespace BabyTrackerMobile.Models
     }
 
     [Table("VitaminSchedules")]
-    public class VitaminSchedule
+    public class VitaminSchedule : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
@@ -107,6 +135,10 @@ namespace BabyTrackerMobile.Models
         public bool IsActive { get; set; } = true;
         /// <summary>true = vitamina da mãe; false = do bebê.</summary>
         public bool IsMother { get; set; }
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
 
         [Ignore]
         public TimeSpan TimeOfDay
@@ -122,7 +154,7 @@ namespace BabyTrackerMobile.Models
         public string OwnerLabel => IsMother ? "🤱 Mãe" : "👶 Bebê";
     }
 
-    /// <summary>Registro de que a vitamina foi tomada em determinado dia.</summary>
+    /// <summary>Registro de que a vitamina foi tomada em determinado dia (local).</summary>
     [Table("VitaminLogs")]
     public class VitaminLog
     {
@@ -135,7 +167,7 @@ namespace BabyTrackerMobile.Models
 
     /// <summary>Conquista/marco do bebê (primeiro sorriso, engatinhar, andar...).</summary>
     [Table("Milestones")]
-    public class Milestone
+    public class Milestone : ISyncEntity
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
@@ -147,6 +179,10 @@ namespace BabyTrackerMobile.Models
         public string Notes { get; set; } = string.Empty;
         public int SortOrder { get; set; }
         public bool IsCustom { get; set; }
+
+        public string CloudId { get; set; } = "";
+        public long UpdatedAt { get; set; }
+        public bool IsDeleted { get; set; }
 
         [Ignore]
         public bool Achieved => AchievedDate.HasValue;

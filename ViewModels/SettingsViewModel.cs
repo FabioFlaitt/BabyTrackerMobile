@@ -12,6 +12,38 @@ namespace BabyTrackerMobile.ViewModels
 {
     public partial class SettingsViewModel : ObservableObject
     {
+        private readonly FirebaseAuthService _auth;
+        private readonly FamilyService _family;
+        private readonly CloudSyncService _cloud;
+
+        public SettingsViewModel(FirebaseAuthService auth, FamilyService family, CloudSyncService cloud)
+        {
+            _auth = auth;
+            _family = family;
+            _cloud = cloud;
+        }
+
+        // ---- Família (sincronização entre celulares) ----
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasFamily))]
+        [NotifyPropertyChangedFor(nameof(NoFamily))]
+        [NotifyPropertyChangedFor(nameof(FamilyStatusText))]
+        private string familyCode = "";
+
+        [ObservableProperty]
+        private string joinCode = "";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(NotLoggedIn))]
+        private bool isLoggedInForFamily;
+
+        public bool HasFamily => !string.IsNullOrEmpty(FamilyCode);
+        public bool NoFamily => !HasFamily;
+        public bool NotLoggedIn => !IsLoggedInForFamily;
+        public string FamilyStatusText => HasFamily
+            ? $"Código da família: {FamilyCode}\nCompartilhe este código com o outro celular."
+            : "Crie uma família ou entre com um código para compartilhar os dados.";
+
         [ObservableProperty]
         private int babyId = 0;
 
@@ -78,8 +110,62 @@ namespace BabyTrackerMobile.ViewModels
                 SelectedFeedingTypeIndex = (int)baby.FeedingType;
 
                 await LoadVitaminsAsync();
+
+                IsLoggedInForFamily = _auth.IsLoggedIn;
+                FamilyCode = _family.FamilyId ?? "";
             }
             finally { IsLoading = false; }
+        }
+
+        [RelayCommand]
+        public async Task CreateFamilyAsync()
+        {
+            if (!_auth.IsLoggedIn)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Entre na conta", "Para compartilhar, entre na sua conta primeiro (aba Chat).", "OK");
+                return;
+            }
+            var code = await _family.CreateFamilyAsync();
+            if (code == null)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", "Não foi possível criar a família.", "OK");
+                return;
+            }
+            await _cloud.PushAllLocalAsync();
+            FamilyCode = code;
+            await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("👨‍👩‍👦 Família criada",
+                $"Seu código é: {code}\n\nNo outro celular, entre na conta e use 'Entrar com código'.", "OK");
+        }
+
+        [RelayCommand]
+        public async Task JoinFamilyAsync()
+        {
+            if (!_auth.IsLoggedIn)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Entre na conta", "Para compartilhar, entre na sua conta primeiro (aba Chat).", "OK");
+                return;
+            }
+            var (ok, error) = await _family.JoinFamilyAsync(JoinCode);
+            if (!ok)
+            {
+                await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Erro", error ?? "Código inválido.", "OK");
+                return;
+            }
+            await _cloud.PullAllAsync(force: true);
+            FamilyCode = _family.FamilyId ?? "";
+            JoinCode = "";
+            await LoadAsync();
+            await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("✅ Pronto", "Entrou na família! Os dados vão aparecer aqui.", "OK");
+        }
+
+        [RelayCommand]
+        public async Task LeaveFamilyAsync()
+        {
+            var confirm = await Microsoft.Maui.Controls.Shell.Current.DisplayAlert("Sair da família",
+                "Este celular deixa de sincronizar. Os dados já baixados continuam aqui. Confirmar?", "Sair", "Cancelar");
+            if (!confirm) return;
+            _family.Leave();
+            FamilyCode = "";
         }
 
         public async Task LoadVitaminsAsync()

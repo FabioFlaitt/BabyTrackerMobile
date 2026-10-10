@@ -135,6 +135,11 @@ namespace BabyTrackerMobile.ViewModels
         public async Task RefreshAsync()
         {
             if (CurrentBaby == null) return;
+
+            // Puxa o que o outro celular registrou (se a família estiver ligada).
+            var cloud = Resolve<CloudSyncService>();
+            if (cloud != null) await cloud.PullAllAsync();
+
             var date = DateTime.Today;
             _loadedDate = date;
             var feedings = await DatabaseService.GetFeedingsForDateAsync(CurrentBaby.Id, date);

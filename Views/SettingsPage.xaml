@@ -31,6 +31,33 @@
                 </StackLayout>
             </Frame>
 
+            <!-- Família (sincronização) -->
+            <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
+                <StackLayout Spacing="12">
+                    <Label Text="👨‍👩‍👦 Família (dois celulares)" FontSize="18" FontAttributes="Bold" TextColor="#212121" />
+
+                    <Label Text="Entre na sua conta na aba Chat para usar a família."
+                           TextColor="#E65100" FontSize="13" IsVisible="{Binding NotLoggedIn}" />
+
+                    <Label Text="{Binding FamilyStatusText}" TextColor="#757575" FontSize="13" />
+
+                    <!-- Sem família ainda -->
+                    <StackLayout Spacing="10" IsVisible="{Binding NoFamily}">
+                        <Button Text="Criar família (gera um código)" Command="{Binding CreateFamilyCommand}" BackgroundColor="#00897B" TextColor="White" CornerRadius="8" />
+                        <BoxView HeightRequest="1" BackgroundColor="#E0E0E0" />
+                        <Label Text="Ou entrar com um código:" TextColor="#757575" FontSize="13" />
+                        <Entry Text="{Binding JoinCode}" Placeholder="Ex: ABC123" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" />
+                        <Button Text="Entrar na família" Command="{Binding JoinFamilyCommand}" BackgroundColor="#00695C" TextColor="White" CornerRadius="8" />
+                    </StackLayout>
+
+                    <!-- Já em família -->
+                    <StackLayout Spacing="10" IsVisible="{Binding HasFamily}">
+                        <Label Text="✅ Sincronizando com a família. Os dois celulares veem os mesmos registros." TextColor="#2E7D32" FontSize="13" />
+                        <Button Text="Sair da família" Command="{Binding LeaveFamilyCommand}" BackgroundColor="#E0E0E0" TextColor="#212121" CornerRadius="8" />
+                    </StackLayout>
+                </StackLayout>
+            </Frame>
+
             <!-- Vitamin Reminders Card -->
             <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
                 <StackLayout Spacing="12">

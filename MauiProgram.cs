@@ -25,6 +25,8 @@ public static class MauiProgram
 
         // Serviços online (Firebase via REST)
         builder.Services.AddSingleton<FirebaseAuthService>();
+        builder.Services.AddSingleton<FamilyService>();
+        builder.Services.AddSingleton<CloudSyncService>();
         builder.Services.AddSingleton<ChatService>();
 
         // ViewModels
