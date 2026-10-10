@@ -176,6 +176,9 @@
                     </StackLayout>
                 </Frame>
 
+                <!-- Chat online -->
+                <Button Text="💬 Chat (entrar / criar conta)" Command="{Binding GoToChatCommand}" BackgroundColor="#00897B" TextColor="White" CornerRadius="8" />
+
                 <!-- Exportar WhatsApp -->
                 <Button Text="📤 Enviar resumo do dia (WhatsApp etc)" Command="{Binding ExportDayCommand}" BackgroundColor="#25D366" TextColor="White" CornerRadius="8" />
 

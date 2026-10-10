@@ -16,6 +16,7 @@
             <conv:DiaperDetailConverter x:Key="DiaperDetail" />
             <conv:HasTextConverter x:Key="HasText" />
             <conv:InvertBoolConverter x:Key="InvertBool" />
+            <conv:BotBackgroundConverter x:Key="BotBg" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

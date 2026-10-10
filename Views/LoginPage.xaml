@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:BabyTrackerMobile.ViewModels"
+             x:Class="BabyTrackerMobile.Views.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             Title="Entrar"
+             BackgroundColor="#F5F5F5">
+    <ScrollView>
+        <StackLayout Spacing="15" Padding="20" VerticalOptions="Center">
+
+            <Label Text="💬 BabyAntonio Chat" FontSize="24" FontAttributes="Bold" TextColor="#1976D2" HorizontalOptions="Center" />
+            <Label Text="{Binding Title}" FontSize="18" TextColor="#212121" HorizontalOptions="Center" Margin="0,0,0,10" />
+
+            <Frame BackgroundColor="#FFF3E0" CornerRadius="8" Padding="12" HasShadow="False" IsVisible="{Binding NotConfigured}">
+                <Label Text="⚠️ O Firebase ainda não foi configurado. Avise o desenvolvedor para preencher as chaves do projeto." TextColor="#E65100" FontSize="13" />
+            </Frame>
+
+            <Frame BackgroundColor="White" CornerRadius="12" Padding="20" HasShadow="False">
+                <StackLayout Spacing="12">
+                    <Label Text="E-mail" TextColor="#757575" FontSize="14" />
+                    <Entry Text="{Binding Email}" Keyboard="Email" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" Placeholder="voce@email.com" />
+
+                    <Label Text="Senha" TextColor="#757575" FontSize="14" />
+                    <Entry Text="{Binding Password}" IsPassword="True" BackgroundColor="#F5F5F5" TextColor="#212121" PlaceholderColor="#9E9E9E" Placeholder="mínimo 6 caracteres" />
+
+                    <Label Text="{Binding ErrorText}" TextColor="#C62828" FontSize="13" IsVisible="{Binding ErrorText, Converter={StaticResource HasText}}" />
+
+                    <Button Text="{Binding ActionText}" Command="{Binding SubmitCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBool}}" BackgroundColor="#1976D2" TextColor="White" CornerRadius="8" Margin="0,8,0,0" />
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#1976D2" />
+
+                    <Button Text="{Binding ToggleText}" Command="{Binding ToggleModeCommand}" BackgroundColor="Transparent" TextColor="#1976D2" />
+                </StackLayout>
+            </Frame>
+
+            <Label Text="Suas mamadas e fraldas continuam salvas no aparelho, com ou sem conta. A conta serve para o chat."
+                   TextColor="#9E9E9E" FontSize="12" HorizontalTextAlignment="Center" FontAttributes="Italic" />
+
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

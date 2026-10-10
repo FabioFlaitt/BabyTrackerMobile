@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:BabyTrackerMobile.ViewModels"
+             xmlns:svc="clr-namespace:BabyTrackerMobile.Services"
+             x:Class="BabyTrackerMobile.Views.ChatPage"
+             x:DataType="vm:ChatViewModel"
+             Title="Chat"
+             BackgroundColor="#F5F5F5">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Sair" Command="{Binding SignOutCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="10">
+
+        <!-- Cabeçalho com nickname -->
+        <Frame Grid.Row="0" BackgroundColor="#1976D2" CornerRadius="10" Padding="12" HasShadow="False" Margin="0,0,0,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="{Binding Nickname, StringFormat='Você: {0}'}" TextColor="White" FontAttributes="Bold" VerticalOptions="Center" />
+                <Button Grid.Column="1" Text="Trocar nick" Clicked="OnChangeNick" BackgroundColor="#1565C0" TextColor="White" FontSize="12" CornerRadius="6" Padding="8,2" />
+            </Grid>
+        </Frame>
+
+        <!-- Lista de mensagens -->
+        <CollectionView Grid.Row="1" x:Name="MessagesList" ItemsSource="{Binding Messages}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="svc:ChatMessage">
+                    <Grid Padding="2,4">
+                        <Frame CornerRadius="10" Padding="10" HasShadow="False"
+                               BackgroundColor="{Binding IsBot, Converter={StaticResource BotBg}}">
+                            <StackLayout Spacing="2">
+                                <Label Text="{Binding Nickname}" FontAttributes="Bold" FontSize="12" TextColor="#1976D2" />
+                                <Label Text="{Binding Text}" TextColor="#212121" FontSize="15" />
+                                <Label Text="{Binding TimeText}" FontSize="10" TextColor="#9E9E9E" HorizontalOptions="End" />
+                            </StackLayout>
+                        </Frame>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <Label Text="Nenhuma mensagem ainda. Dê um oi! 👋" TextColor="#9E9E9E" HorizontalOptions="Center" Margin="0,40,0,0" />
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Campo de envio -->
+        <StackLayout Grid.Row="2" Spacing="4" Margin="0,8,0,0">
+            <Label Text="{Binding StatusText}" TextColor="#C62828" FontSize="12" IsVisible="{Binding StatusText, Converter={StaticResource HasText}}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry Grid.Column="0" Text="{Binding Draft}" Placeholder="Escreva uma mensagem..." BackgroundColor="White" TextColor="#212121" PlaceholderColor="#9E9E9E" ReturnCommand="{Binding SendCommand}" />
+                <Button Grid.Column="1" Text="Enviar" Command="{Binding SendCommand}" BackgroundColor="#25D366" TextColor="White" CornerRadius="8" />
+            </Grid>
+        </StackLayout>
+    </Grid>
+</ContentPage>

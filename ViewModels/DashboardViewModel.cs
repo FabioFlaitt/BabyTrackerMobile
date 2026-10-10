@@ -235,6 +235,14 @@ namespace BabyTrackerMobile.ViewModels
             => await Microsoft.Maui.Controls.Shell.Current.GoToAsync("milestones");
 
         [RelayCommand]
+        public async Task GoToChatAsync()
+        {
+            var auth = Resolve<FirebaseAuthService>();
+            var target = (auth != null && auth.IsLoggedIn) ? "chat" : "login";
+            await Microsoft.Maui.Controls.Shell.Current.GoToAsync(target);
+        }
+
+        [RelayCommand]
         public async Task ExportDayAsync()
         {
             try

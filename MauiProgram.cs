@@ -5,6 +5,7 @@ using Microsoft.Maui.Hosting;
 using Plugin.LocalNotification;
 using BabyTrackerMobile.Views;
 using BabyTrackerMobile.ViewModels;
+using BabyTrackerMobile.Services;
 
 namespace BabyTrackerMobile;
 
@@ -22,6 +23,10 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
+        // Serviços online (Firebase via REST)
+        builder.Services.AddSingleton<FirebaseAuthService>();
+        builder.Services.AddSingleton<ChatService>();
+
         // ViewModels
         builder.Services.AddSingleton<DashboardViewModel>();
         builder.Services.AddSingleton<FeedingViewModel>();
@@ -30,6 +35,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<HistoryViewModel>();
         builder.Services.AddSingleton<SettingsViewModel>();
         builder.Services.AddTransient<MilestonesViewModel>();
+        builder.Services.AddTransient<LoginViewModel>();
+        builder.Services.AddSingleton<ChatViewModel>();
 
         // Pages
         builder.Services.AddSingleton<DashboardPage>();
@@ -39,6 +46,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<HistoryPage>();
         builder.Services.AddSingleton<SettingsPage>();
         builder.Services.AddTransient<MilestonesPage>();
+        builder.Services.AddTransient<LoginPage>();
+        builder.Services.AddTransient<ChatPage>();
 
         return builder.Build();
     }
