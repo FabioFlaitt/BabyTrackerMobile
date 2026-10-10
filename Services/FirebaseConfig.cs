@@ -12,8 +12,8 @@ namespace BabyTrackerMobile.Services
     public static class FirebaseConfig
     {
         public const string ApiKey = "COLE_AQUI_A_WEB_API_KEY";
-        public const string ProjectId = "COLE_AQUI_O_PROJECT_ID";
-        public const string DatabaseUrl = "https://COLE-AQUI-default-rtdb.firebaseio.com";
+        public const string ProjectId = "babyantonio";
+        public const string DatabaseUrl = "https://babyantonio-default-rtdb.firebaseio.com";
 
         /// <summary>true quando as chaves já foram preenchidas (não são mais placeholders).</summary>
         public static bool IsConfigured =>
