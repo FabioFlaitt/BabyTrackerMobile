@@ -53,8 +53,8 @@ namespace BabyTrackerMobile.Services
             LocalNotificationCenter.Current.Cancel(BaseNotificationId + vitamin.Id);
         }
 
-        /// <summary>Mostra na hora uma notificação (usada pelo chat).</summary>
-        public static async Task ShowMessageAsync(int id, string title, string description)
+        /// <summary>Mostra na hora uma notificação (usada pelo chat). badge = número no ícone.</summary>
+        public static async Task ShowMessageAsync(int id, string title, string description, int badge = 1)
         {
             await RequestPermissionAsync();
             var request = new NotificationRequest
@@ -62,7 +62,7 @@ namespace BabyTrackerMobile.Services
                 NotificationId = id,
                 Title = title,
                 Description = description,
-                BadgeNumber = 1
+                BadgeNumber = badge
             };
             await LocalNotificationCenter.Current.Show(request);
         }

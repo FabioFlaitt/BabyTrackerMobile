@@ -24,11 +24,18 @@ namespace BabyTrackerMobile.Services
         public static bool ChatOpen;
 
         private const string SeenKey = "chat_last_seen_key";
+        private const string UnreadKey = "chat_unread_count";
 
         private static string LastSeen
         {
             get { try { return Preferences.Get(SeenKey, ""); } catch { return ""; } }
             set { try { Preferences.Set(SeenKey, value); } catch { } }
+        }
+
+        private static int Unread
+        {
+            get { try { return Preferences.Get(UnreadKey, 0); } catch { return 0; } }
+            set { try { Preferences.Set(UnreadKey, value); } catch { } }
         }
 
         public async Task CheckAsync()
