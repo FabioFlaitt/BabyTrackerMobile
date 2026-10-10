@@ -11,7 +11,7 @@ namespace BabyTrackerMobile.Services
     /// </summary>
     public static class FirebaseConfig
     {
-        public const string ApiKey = "COLE_AQUI_A_WEB_API_KEY";
+        public const string ApiKey = "AIzaSyASVE1gD_jQceSbNuCkD4XSRn98ER6cAKE";
         public const string ProjectId = "babyantonio";
         public const string DatabaseUrl = "https://babyantonio-default-rtdb.firebaseio.com";
 
